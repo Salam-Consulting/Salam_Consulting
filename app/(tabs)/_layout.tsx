@@ -1,18 +1,25 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Redirect, Tabs } from "expo-router";
+import React from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { HapticTab } from "@/components/haptic-tab";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Colors } from "@/constants/theme";
+import { useAuth } from "@/contexts/auth";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export default function TabLayout() {
-  let colorScheme = useColorScheme() as 'light' | 'dark' | null;
-  if (!colorScheme) colorScheme = 'light';
+  let colorScheme = useColorScheme() as "light" | "dark" | null;
+  const { isAuthenticated } = useAuth();
+
+  if (!colorScheme) colorScheme = "light";
+
+  if (!isAuthenticated) {
+    return <Redirect href="/create-account" />;
+  }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#08090d' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#08090d" }}>
       <Tabs
         screenOptions={{
           headerShown: false,
@@ -26,8 +33,8 @@ export default function TabLayout() {
 
           // Tab bar styling
           tabBarStyle: {
-            backgroundColor: '#08090d',
-            borderTopColor: 'rgba(255,255,255,0.08)',
+            backgroundColor: "#08090d",
+            borderTopColor: "rgba(255,255,255,0.08)",
             height: 60,
           },
         }}
@@ -37,7 +44,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: 'Home',
+            title: "Home",
             tabBarIcon: ({ color }) => (
               <IconSymbol name="house.fill" size={26} color={color} />
             ),
@@ -48,7 +55,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="about"
           options={{
-            title: 'About',
+            title: "About",
             tabBarIcon: ({ color }) => (
               <IconSymbol name="person.crop.circle.fill" size={26} color={color} />
             ),
@@ -59,7 +66,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="services"
           options={{
-            title: 'Services',
+            title: "Services",
             tabBarIcon: ({ color }) => (
               <IconSymbol name="briefcase.fill" size={26} color={color} />
             ),
@@ -70,7 +77,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="projects"
           options={{
-            title: 'Projects',
+            title: "Projects",
             tabBarIcon: ({ color }) => (
               <IconSymbol name="square.stack.3d.up.fill" size={26} color={color} />
             ),
@@ -81,7 +88,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="contact"
           options={{
-            title: 'Contact',
+            title: "Contact",
             tabBarIcon: ({ color }) => (
               <IconSymbol name="bubble.left.and.bubble.right.fill" size={26} color={color} />
             ),
@@ -92,7 +99,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="settings"
           options={{
-            title: 'Settings',
+            title: "Settings",
             tabBarIcon: ({ color }) => (
               <IconSymbol name="gearshape.fill" size={26} color={color} />
             ),
