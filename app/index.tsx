@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -12,16 +12,37 @@ import {
   View,
 } from "react-native";
 
+import LoadingScreen from "@/components/LoadingScreen";
 import { useAuth } from "@/contexts/auth";
 
 export default function LoginScreen() {
   const { signIn, loading } = useAuth();
+
+  // 🔥 Only for when the app FIRST loads
+  const [initialAppLoad, setInitialAppLoad] = useState(true);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
+  // 🔥 Show LoadingScreen ONLY once when app first loads
+  useEffect(() => {
+    const timer = setTimeout(() => setInitialAppLoad(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // ⛔ Only show loading screen FIRST — not during login attempts
+  if (initialAppLoad) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#08090d" }}>
+        <LoadingScreen />
+      </View>
+    );
+  }
+
   const handleLogin = async () => {
     setError("");
+
     try {
       await signIn(email.trim(), password);
       router.replace("/(tabs)");
@@ -178,4 +199,3 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
-
