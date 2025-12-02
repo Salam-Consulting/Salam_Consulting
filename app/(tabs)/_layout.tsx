@@ -1,5 +1,5 @@
-import { Redirect, Tabs } from "expo-router";
-import React from "react";
+import { Tabs, useRouter } from "expo-router";
+import React, { useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { HapticTab } from "@/components/haptic-tab";
@@ -11,11 +11,20 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 export default function TabLayout() {
   let colorScheme = useColorScheme() as "light" | "dark" | null;
   const { isAuthenticated } = useAuth();
+  const router = useRouter();
 
   if (!colorScheme) colorScheme = "light";
 
+  // Redirect if not authenticated using router.replace to avoid navigation stack issues
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace("/create-account");
+    }
+  }, [isAuthenticated, router]);
+
+  // Show nothing while redirecting
   if (!isAuthenticated) {
-    return <Redirect href="/create-account" />;
+    return null;
   }
 
   return (

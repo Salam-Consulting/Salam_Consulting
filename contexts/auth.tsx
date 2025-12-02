@@ -69,15 +69,56 @@ async function syncUserDocument(
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
-  const [initializing, setInitializing] = useState(true);
+  const [initializing, setInitializing] = useState(false); // Start as false - don't block
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-      setInitializing(false);
-    });
+    let unsubscribe: (() => void) | null = null;
+    let isMounted = true;
+    
+    console.log("Setting up auth state listener...");
+    
+    // Very short timeout - don't block the app
+    const timeoutId = setTimeout(() => {
+      if (isMounted) {
+        console.log("Auth check complete (timeout)");
+        setInitializing(false);
+      }
+    }, 500); // Only 500ms timeout
+    
+    try {
+      unsubscribe = onAuthStateChanged(
+        auth,
+        (user) => {
+          clearTimeout(timeoutId);
+          console.log("Auth state changed:", user ? "User logged in" : "No user");
+          if (isMounted) {
+            setCurrentUser(user);
+            setInitializing(false);
+          }
+        },
+        (error) => {
+          clearTimeout(timeoutId);
+          console.error("Auth state change error:", error);
+          if (isMounted) {
+            setInitializing(false);
+          }
+        }
+      );
+    } catch (error) {
+      clearTimeout(timeoutId);
+      console.error("Error setting up auth listener:", error);
+      if (isMounted) {
+        setInitializing(false);
+      }
+    }
 
-    return unsubscribe;
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, []);
 
   async function signIn(nextEmail: string, password: string) {

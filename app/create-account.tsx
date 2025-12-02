@@ -1,10 +1,11 @@
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -20,6 +21,19 @@ export default function CreateAccountScreen() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
+  
+  // Add ScrollView ref
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Function to scroll down when input is focused
+  const handleInputFocus = () => {
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ 
+        y: 300,  // Change this value to control scroll distance (in pixels)
+        animated: true 
+      });
+    }, 100);
+  };
 
   const allowedDomains = useMemo(
     () => [
@@ -139,80 +153,92 @@ export default function CreateAccountScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.form}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+    >
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        style={styles.scrollView}
       >
-        <View style={styles.header}>
-          <Text style={styles.logo}>Salam Consulting</Text>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>
-            Join us to access the Salam Consulting experience.
-          </Text>
+        <View style={styles.form}>
+          <View style={styles.header}>
+            <Text style={styles.logo}>Salam Consulting</Text>
+            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.subtitle}>
+              Join us to access the Salam Consulting experience.
+            </Text>
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Full Name</Text>
+            <TextInput
+              value={fullName}
+              onChangeText={setFullName}
+              onFocus={handleInputFocus}
+              placeholder="John Doe"
+              placeholderTextColor="#6f7d83"
+              style={styles.input}
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              onFocus={handleInputFocus}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              placeholder="you@example.com"
+              placeholderTextColor="#6f7d83"
+              style={styles.input}
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              onFocus={handleInputFocus}
+              secureTextEntry
+              placeholder="Create a strong password"
+              placeholderTextColor="#6f7d83"
+              style={styles.input}
+            />
+          </View>
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {info ? <Text style={styles.info}>{info}</Text> : null}
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.cta,
+              pressed && !loading ? { opacity: 0.85 } : null,
+            ]}
+            disabled={loading}
+            onPress={handleSignUp}
+          >
+            {loading ? (
+              <ActivityIndicator color="#08090d" />
+            ) : (
+              <Text style={styles.ctaLabel}>Create Account</Text>
+            )}
+          </Pressable>
+
+          <Pressable onPress={() => router.replace("/")}>
+            <Text style={styles.secondaryText}>
+              Already have an account? <Text style={styles.link}>Sign in</Text>
+            </Text>
+          </Pressable>
         </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Full Name</Text>
-          <TextInput
-            value={fullName}
-            onChangeText={setFullName}
-            placeholder="John Doe"
-            placeholderTextColor="#6f7d83"
-            style={styles.input}
-          />
-        </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            placeholder="you@example.com"
-            placeholderTextColor="#6f7d83"
-            style={styles.input}
-          />
-        </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            placeholder="Create a strong password"
-            placeholderTextColor="#6f7d83"
-            style={styles.input}
-          />
-        </View>
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        {info ? <Text style={styles.info}>{info}</Text> : null}
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.cta,
-            pressed && !loading ? { opacity: 0.85 } : null,
-          ]}
-          disabled={loading}
-          onPress={handleSignUp}
-        >
-          {loading ? (
-            <ActivityIndicator color="#08090d" />
-          ) : (
-            <Text style={styles.ctaLabel}>Create Account</Text>
-          )}
-        </Pressable>
-
-        <Pressable onPress={() => router.replace("/")}>
-          <Text style={styles.secondaryText}>
-            Already have an account? <Text style={styles.link}>Sign in</Text>
-          </Text>
-        </Pressable>
-      </KeyboardAvoidingView>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -220,8 +246,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#08090d",
+  },
+  scrollView: {
+    backgroundColor: "#08090d",
+  },
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 24,
     justifyContent: "center",
+    paddingVertical: 40,
+    backgroundColor: "#08090d",
   },
   form: {
     gap: 20,

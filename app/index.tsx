@@ -1,43 +1,46 @@
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/auth";
+import { Redirect, router } from "expo-router";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
-  KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  View,
+  View
 } from "react-native";
-
-import LoadingScreen from "@/components/LoadingScreen";
-import { useAuth } from "@/contexts/auth";
-
 export default function LoginScreen() {
-  const { signIn, loading } = useAuth();
-
-  // 🔥 Only for when the app FIRST loads
-  const [initialAppLoad, setInitialAppLoad] = useState(true);
+  const { signIn, loading, isAuthenticated } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  
+  // Add ScrollView ref
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  // 🔥 Show LoadingScreen ONLY once when app first loads
-  useEffect(() => {
-    const timer = setTimeout(() => setInitialAppLoad(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
+  // Function to scroll down when input is focused
+  // On iOS, don't scroll to prevent weird behavior with Face ID autofill
+  // iOS handles keyboard avoidance natively without KeyboardAvoidingView
+  const handleInputFocus = () => {
+    // Only scroll on Android - iOS handles keyboard avoidance better natively
+    if (Platform.OS === 'android') {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollTo({ 
+          y: 200,  // Change this value to control scroll distance (in pixels)
+          animated: true 
+        });
+      }, 100);
+    }
+    // On iOS, do nothing - let native iOS keyboard handling work
+  };
 
-  // ⛔ Only show loading screen FIRST — not during login attempts
-  if (initialAppLoad) {
-    return (
-      <View style={{ flex: 1, backgroundColor: "#08090d" }}>
-        <LoadingScreen />
-      </View>
-    );
+  // Redirect if already authenticated (only if auth is ready)
+  if (isAuthenticated === true) {
+    return <Redirect href="/(tabs)" />;
   }
 
   const handleLogin = async () => {
@@ -53,74 +56,89 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.form}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}
+        style={styles.scrollView}
+        bounces={false} // Prevent bounce on iOS to avoid weird behavior with autofill
       >
-        <View style={styles.header}>
-          <Image
-            source={require("@/assets/images/Logo.png")}
-            style={styles.heroLogo}
-            resizeMode="contain"
-          />
-          <Text style={styles.logo}>Salam Consulting</Text>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>
-            Sign in to continue exploring the app.
-          </Text>
+        <View style={styles.form}>
+          <View style={styles.header}>
+            <Image
+              source={require("@/assets/images/Logo.png")}
+              style={styles.heroLogo}
+              resizeMode="contain"
+            />
+            <Text style={styles.logo}>Salam Consulting</Text>
+            <Text style={styles.title}>Welcome Back</Text>
+            <Text style={styles.subtitle}>
+              Sign in to continue exploring the app.
+            </Text>
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              onFocus={handleInputFocus}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              textContentType="emailAddress"
+              autoComplete="email"
+              autoCorrect={false}
+              placeholder="you@salam-consulting.com"
+              placeholderTextColor="#6f7d83"
+              style={styles.input}
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              onFocus={handleInputFocus}
+              secureTextEntry
+              textContentType="password"
+              autoComplete="password"
+              autoCorrect={false}
+              placeholder="••••••••"
+              placeholderTextColor="#6f7d83"
+              style={styles.input}
+            />
+          </View>
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.cta,
+              pressed && !loading ? { opacity: 0.85 } : null,
+            ]}
+            disabled={loading}
+            onPress={handleLogin}
+          >
+            {loading ? (
+              <ActivityIndicator color="#08090d" />
+            ) : (
+              <Text style={styles.ctaLabel}>Sign In</Text>
+            )}
+          </Pressable>
+
+          <Pressable
+            onPress={() => router.push("/create-account")}
+            style={styles.secondary}
+          >
+            <Text style={styles.secondaryText}>
+              New here? <Text style={styles.link}>Create an account</Text>
+            </Text>
+          </Pressable>
         </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            placeholder="you@salam-consulting.com"
-            placeholderTextColor="#6f7d83"
-            style={styles.input}
-          />
-        </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            placeholder="••••••••"
-            placeholderTextColor="#6f7d83"
-            style={styles.input}
-          />
-        </View>
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.cta,
-            pressed && !loading ? { opacity: 0.85 } : null,
-          ]}
-          disabled={loading}
-          onPress={handleLogin}
-        >
-          {loading ? (
-            <ActivityIndicator color="#08090d" />
-          ) : (
-            <Text style={styles.ctaLabel}>Sign In</Text>
-          )}
-        </Pressable>
-
-        <Pressable
-          onPress={() => router.push("/create-account")}
-          style={styles.secondary}
-        >
-          <Text style={styles.secondaryText}>
-            New here? <Text style={styles.link}>Create an account</Text>
-          </Text>
-        </Pressable>
-      </KeyboardAvoidingView>
+      </ScrollView>
     </View>
   );
 }
@@ -129,8 +147,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#08090d",
+  },
+  scrollView: {
+    backgroundColor: "#08090d",
+  },
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 24,
     justifyContent: "center",
+    paddingVertical: 40,
+    backgroundColor: "#08090d",
   },
   form: {
     gap: 20,

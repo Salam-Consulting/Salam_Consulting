@@ -1,5 +1,6 @@
-import LoadingScreen from "@/components/LoadingScreen";
+import { Redirect } from "expo-router";
 
 export default function LoadingRoute() {
-  return <LoadingScreen />;
+  // Immediately redirect to login - no loading screen
+  return <Redirect href="/index" />;
 }

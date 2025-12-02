@@ -1,15 +1,11 @@
-import { FirebaseRecaptchaVerifierModal } from "expo-firebase-recaptcha";
 import { router } from "expo-router";
-import { FirebaseError } from "firebase/app";
 import {
-  PhoneAuthProvider,
-  linkWithCredential,
   sendPasswordResetEmail,
   updateEmail,
   updateProfile,
 } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -24,7 +20,7 @@ import {
 } from "react-native";
 
 import { useAuth } from "@/contexts/auth";
-import { auth, db, firebaseConfig } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 
 type Profile = {
   fullName: string;
@@ -56,7 +52,8 @@ export default function Settings() {
   const [initialPhone, setInitialPhone] = useState("");
 
   const user = auth.currentUser;
-  const recaptchaVerifier = useRef<FirebaseRecaptchaVerifierModal>(null);
+  // Phone verification temporarily disabled - expo-firebase-recaptcha was deprecated
+  // const recaptchaVerifier = useRef<FirebaseRecaptchaVerifierModal>(null);
 
   const isValidEmail = useMemo(
     () => /^\S+@\S+\.\S+$/.test(profile.email.trim()),
@@ -186,6 +183,11 @@ export default function Settings() {
   };
 
   const handleSendVerificationCode = async () => {
+    // Phone verification temporarily disabled - expo-firebase-recaptcha was deprecated
+    setError("Phone verification is currently unavailable. This feature will be restored in a future update.");
+    return;
+    
+    /* Original code commented out - requires recaptcha
     if (!user) {
       setError("Sign in to verify your phone.");
       return;
@@ -243,9 +245,15 @@ export default function Settings() {
     } finally {
       setSendingCode(false);
     }
+    */
   };
 
   const handleConfirmCode = async () => {
+    // Phone verification temporarily disabled - expo-firebase-recaptcha was deprecated
+    setError("Phone verification is currently unavailable. This feature will be restored in a future update.");
+    return;
+    
+    /* Original code commented out - requires recaptcha
     if (!user) {
       setError("Sign in to verify your phone.");
       return;
@@ -299,6 +307,7 @@ export default function Settings() {
     } finally {
       setVerifyingCode(false);
     }
+    */
   };
 
   const handleSignOut = async () => {
@@ -320,11 +329,7 @@ export default function Settings() {
 
   return (
     <View style={styles.container}>
-      <FirebaseRecaptchaVerifierModal
-        ref={recaptchaVerifier}
-        firebaseConfig={firebaseConfig}
-        attemptInvisibleVerification
-      />
+      {/* FirebaseRecaptchaVerifierModal removed - expo-firebase-recaptcha was deprecated */}
       <KeyboardAvoidingView
         style={{ flex: 1, width: "100%" }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
