@@ -51,16 +51,6 @@ export default function TabLayout() {
           }}
         />
 
-        {/* ABOUT */}
-        <Tabs.Screen
-          name="about"
-          options={{
-            title: "About",
-            tabBarIcon: ({ color }) => (
-              <IconSymbol name="person.crop.circle.fill" size={26} color={color} />
-            ),
-          }}
-        />
 
         {/* SERVICES */}
         <Tabs.Screen
@@ -91,6 +81,17 @@ export default function TabLayout() {
             title: "Contact",
             tabBarIcon: ({ color }) => (
               <IconSymbol name="bubble.left.and.bubble.right.fill" size={26} color={color} />
+            ),
+          }}
+        />
+
+        {/* ABOUT */}
+        <Tabs.Screen
+          name="about"
+          options={{
+            title: "About",
+            tabBarIcon: ({ color }) => (
+              <IconSymbol name="person.crop.circle.fill" size={26} color={color} />
             ),
           }}
         />
