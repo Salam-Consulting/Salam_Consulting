@@ -1,17 +1,18 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
 import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
 import * as firebaseAuth from "firebase/auth";
 import { getAuth, initializeAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCWzAnXCQRvKKH0hwVweitL95wiFeAtWB4",
-  authDomain: "salamconsulting-fe3a4.firebaseapp.com",
-  projectId: "salamconsulting-fe3a4",
-  storageBucket: "salamconsulting-fe3a4.firebasestorage.app",
-  messagingSenderId: "345400972418",
-  appId: "1:345400972418:web:54d2c77e2360cf9f4bd09b",
-  measurementId: "G-ZRBSV3CWEF",
+  apiKey: "AIzaSyCq4w4iS5DUcnQ7p9WzaS6G5M9h0vC_8UU",
+  authDomain: "salam-64749.firebaseapp.com",
+  projectId: "salam-64749",
+  storageBucket: "salam-64749.firebasestorage.app",
+  messagingSenderId: "546010459328",
+  appId: "1:546010459328:web:e2ac4f1dd10a21a1961125",
+  measurementId: "G-52T2YR3NQC"
 };
 
 let app!: FirebaseApp;
@@ -68,4 +69,8 @@ try {
   console.warn("App will continue with Firebase - some features may not work as expected");
 }
 
-export { app, auth, db, firebaseConfig };
+// Get Google Web Client ID from environment variables
+const googleWebClientId = Constants.expoConfig?.extra?.googleWebClientId || process.env.GOOGLE_WEB_CLIENT_ID;
+
+export { app, auth, db, firebaseConfig, googleWebClientId };
+

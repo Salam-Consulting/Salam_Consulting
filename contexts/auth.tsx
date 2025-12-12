@@ -1,9 +1,15 @@
+import * as AuthSession from "expo-auth-session";
+import Constants from "expo-constants";
+import * as Crypto from "expo-crypto";
+import * as WebBrowser from "expo-web-browser";
 import { FirebaseError } from "firebase/app";
 import {
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
+  GoogleAuthProvider,
   onAuthStateChanged,
   sendEmailVerification,
+  signInWithCredential,
   signInWithEmailAndPassword,
   updateProfile,
   type User,
@@ -22,17 +28,32 @@ import React, {
   useMemo,
   useState,
 } from "react";
+import { Platform } from "react-native";
 
-import { auth, db } from "@/lib/firebase";
+// Complete the auth session for web browser
+WebBrowser.maybeCompleteAuthSession();
+
+import { auth, db, googleWebClientId } from "@/lib/firebase";
 
 type AuthContextValue = {
   isAuthenticated: boolean;
   email: string | null;
   loading: boolean;
   initializing: boolean;
+  onboardingCompleted: boolean | null; // null = not loaded yet
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (fullName: string, email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  completeOnboarding: (onboardingData: OnboardingData) => Promise<void>;
+};
+
+export type OnboardingData = {
+  careerGoal: string;
+  jobFields: string[];
+  resumeStatus: string;
+  helpNeeded: string[];
+  availability: string;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -52,14 +73,28 @@ async function syncUserDocument(
         email: user.email ?? "",
         createdAt: serverTimestamp(),
         verifiedAt: user.emailVerified ? serverTimestamp() : null,
+        onboardingCompleted: false, // New users need to complete onboarding
       });
       return;
     }
 
-    if (user.emailVerified && !snapshot.data()?.verifiedAt) {
-      await updateDoc(userRef, {
-        verifiedAt: serverTimestamp(),
-      });
+    // For existing users, ensure onboardingCompleted field exists
+    const data = snapshot.data();
+    const updates: Record<string, any> = {};
+
+    if (user.emailVerified && !data?.verifiedAt) {
+      updates.verifiedAt = serverTimestamp();
+    }
+
+    // If onboardingCompleted field doesn't exist, set it to false
+    if (!("onboardingCompleted" in data)) {
+      updates.onboardingCompleted = false;
+      console.log("Adding onboardingCompleted field to existing user");
+    }
+
+    // Apply updates if any
+    if (Object.keys(updates).length > 0) {
+      await updateDoc(userRef, updates);
     }
   } catch (error) {
     console.warn("Failed to sync user profile", error);
@@ -70,6 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(false); // Start as false - don't block
+  const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null);
 
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
@@ -88,12 +124,67 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       unsubscribe = onAuthStateChanged(
         auth,
-        (user) => {
+        async (user) => {
           clearTimeout(timeoutId);
           console.log("Auth state changed:", user ? "User logged in" : "No user");
           if (isMounted) {
             setCurrentUser(user);
             setInitializing(false);
+            
+            // Fetch onboarding status when user changes
+            if (user) {
+              try {
+                const userRef = doc(db, "users", user.uid);
+                const snapshot = await getDoc(userRef);
+                if (snapshot.exists()) {
+                  const data = snapshot.data();
+                  // Check if onboardingCompleted field exists
+                  // If it doesn't exist, treat as false (needs onboarding)
+                  const hasOnboardingField = "onboardingCompleted" in data;
+                  const isCompleted = data?.onboardingCompleted === true;
+                  const hasOnboardingData = !!data?.onboardingData;
+                  
+                  console.log("Onboarding status check:", {
+                    hasField: hasOnboardingField,
+                    isCompleted,
+                    hasOnboardingData,
+                    userId: user.uid,
+                  });
+                  
+                  // User needs onboarding if:
+                  // 1. onboardingCompleted field doesn't exist
+                  // 2. onboardingCompleted is false
+                  // 3. onboardingData doesn't exist (even if field says true, data might be missing)
+                  if (!hasOnboardingField || !isCompleted || !hasOnboardingData) {
+                    setOnboardingCompleted(false);
+                    
+                    // Update existing user documents that don't have the field or data
+                    const updates: Record<string, any> = {};
+                    if (!hasOnboardingField) {
+                      updates.onboardingCompleted = false;
+                    }
+                    if (Object.keys(updates).length > 0) {
+                      try {
+                        await updateDoc(userRef, updates);
+                        console.log("Updated user document with onboardingCompleted field");
+                      } catch (updateError) {
+                        console.warn("Failed to update onboarding field", updateError);
+                      }
+                    }
+                  } else {
+                    setOnboardingCompleted(true);
+                  }
+                } else {
+                  // User document doesn't exist - will be created on next sync
+                  setOnboardingCompleted(false);
+                }
+              } catch (error) {
+                console.warn("Failed to fetch onboarding status", error);
+                setOnboardingCompleted(false);
+              }
+            } else {
+              setOnboardingCompleted(null);
+            }
           }
         },
         (error) => {
@@ -214,8 +305,138 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  async function signInWithGoogle() {
+    if (!googleWebClientId || googleWebClientId === "process.env.GOOGLE_WEB_CLIENT_ID") {
+      throw new Error("Google Web Client ID is not configured. Please add it to your .env file.");
+    }
+
+    setLoading(true);
+    try {
+      let idToken: string;
+
+      if (Platform.OS === "ios" || Platform.OS === "android") {
+        // Use the app's custom URL scheme for OAuth redirect
+        // This must match what's configured in app.config.js and Google Cloud Console
+        const schemeValue = Constants.expoConfig?.scheme;
+        const scheme = Array.isArray(schemeValue) ? schemeValue[0] : (schemeValue || "salamapp");
+        const redirectUri = AuthSession.makeRedirectUri({
+          scheme: scheme,
+        });
+        
+        console.log("Using redirect URI:", redirectUri);
+        console.log("App scheme:", scheme);
+        
+        // Generate a random state for security
+        const state = await Crypto.digestStringAsync(
+          Crypto.CryptoDigestAlgorithm.SHA256,
+          Math.random().toString(),
+        );
+        
+        const request = new AuthSession.AuthRequest({
+          clientId: googleWebClientId,
+          scopes: ["openid", "profile", "email"],
+          responseType: AuthSession.ResponseType.IdToken,
+          redirectUri: redirectUri,
+          state: state,
+        });
+
+        const discovery = {
+          authorizationEndpoint: "https://accounts.google.com/o/oauth2/v2/auth",
+          tokenEndpoint: "https://oauth2.googleapis.com/token",
+          revocationEndpoint: "https://oauth2.googleapis.com/revoke",
+        };
+
+        // Start the OAuth flow
+        // IMPORTANT: Make sure the redirect URI (shown in logs) is added to your
+        // Google Cloud Console OAuth 2.0 Client ID's authorized redirect URIs
+        const result = await request.promptAsync(discovery);
+
+        if (result.type !== "success") {
+          if (result.type === "error") {
+            const errorMsg = result.error?.message || "Unknown error";
+            console.error("OAuth error details:", result.error);
+            console.error("Redirect URI used:", redirectUri);
+            throw new Error(`Google Sign-In failed: ${errorMsg}`);
+          }
+          if (result.type === "cancel") {
+            console.warn("OAuth was cancelled by user or failed to redirect");
+            console.warn("Redirect URI used:", redirectUri);
+            console.warn("Make sure this URI is registered in Google Cloud Console");
+            throw new Error("Google Sign-In was cancelled. Please try again.");
+          }
+          throw new Error("Google Sign-In failed. Please try again.");
+        }
+
+        if (!result.params.id_token) {
+          console.error("OAuth response params:", result.params);
+          throw new Error("No ID token received from Google. Please try again.");
+        }
+
+        idToken = result.params.id_token as string;
+      } else {
+        throw new Error("Google Sign-In is not yet supported on web.");
+      }
+
+      // Create Firebase credential with Google ID token
+      const credential = GoogleAuthProvider.credential(idToken);
+      const userCredential = await signInWithCredential(auth, credential);
+
+      // Sync user document
+      await syncUserDocument(userCredential.user);
+    } catch (error) {
+      console.error("Google Sign-In error:", error);
+      
+      if (error instanceof FirebaseError) {
+        let message = "Unable to sign in with Google. Please try again.";
+
+        switch (error.code) {
+          case "auth/account-exists-with-different-credential":
+            message = "An account already exists with this email address using a different sign-in method.";
+            break;
+          case "auth/invalid-credential":
+            message = "The credential is invalid or has expired. Please try again.";
+            break;
+          case "auth/operation-not-allowed":
+            message = "Google Sign-In is not enabled. Please enable it in Firebase Console.";
+            break;
+          default:
+            message = error.message || "Something went wrong. Please try again.";
+        }
+
+        throw new Error(message);
+      }
+      
+      // Re-throw other errors as-is
+      throw error instanceof Error
+        ? error
+        : new Error("Unable to sign in with Google. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function completeOnboarding(onboardingData: OnboardingData) {
+    if (!currentUser) {
+      throw new Error("No user logged in");
+    }
+
+    try {
+      const userRef = doc(db, "users", currentUser.uid);
+      await updateDoc(userRef, {
+        onboardingCompleted: true,
+        onboardingData: onboardingData,
+        onboardingCompletedAt: serverTimestamp(),
+      });
+      setOnboardingCompleted(true);
+    } catch (error) {
+      console.error("Failed to complete onboarding", error);
+      throw new Error("Failed to save onboarding data. Please try again.");
+    }
+  }
+
   async function signOut() {
     await firebaseSignOut(auth);
+    setOnboardingCompleted(null);
   }
 
   const value = useMemo<AuthContextValue>(
@@ -224,11 +445,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email: currentUser?.email ?? null,
       loading,
       initializing,
+      onboardingCompleted,
       signIn,
       signUp,
+      signInWithGoogle,
       signOut,
+      completeOnboarding,
     }),
-    [currentUser, initializing, loading],
+    [currentUser, initializing, loading, onboardingCompleted],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

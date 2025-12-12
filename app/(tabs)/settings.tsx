@@ -4,7 +4,7 @@ import {
   updateEmail,
   updateProfile,
 } from "firebase/auth";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -19,7 +19,7 @@ import {
   View,
 } from "react-native";
 
-import { useAuth } from "@/contexts/auth";
+import { useAuth, type OnboardingData } from "@/contexts/auth";
 import { auth, db } from "@/lib/firebase";
 
 type Profile = {
@@ -50,6 +50,9 @@ export default function Settings() {
   const [verificationId, setVerificationId] = useState("");
   const [smsCode, setSmsCode] = useState("");
   const [initialPhone, setInitialPhone] = useState("");
+  const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
+  const [editingOnboarding, setEditingOnboarding] = useState(false);
+  const [savingOnboarding, setSavingOnboarding] = useState(false);
 
   const user = auth.currentUser;
   // Phone verification temporarily disabled - expo-firebase-recaptcha was deprecated
@@ -84,6 +87,11 @@ export default function Settings() {
             zip: data.location?.zip ?? "",
           });
           setInitialPhone(phone);
+          
+          // Load onboarding data if it exists
+          if (data.onboardingData) {
+            setOnboardingData(data.onboardingData as OnboardingData);
+          }
         } else {
           setProfile((prev) => ({
             ...prev,
@@ -310,6 +318,28 @@ export default function Settings() {
     */
   };
 
+  const handleUpdateOnboarding = async () => {
+    if (!user || !onboardingData) return;
+    
+    setSavingOnboarding(true);
+    setError("");
+    setMessage("");
+    
+    try {
+      const userRef = doc(db, "users", user.uid);
+      await updateDoc(userRef, {
+        onboardingData: onboardingData,
+        onboardingCompletedAt: serverTimestamp(),
+      });
+      setMessage("Onboarding preferences updated.");
+      setEditingOnboarding(false);
+    } catch (err) {
+      setError("Unable to save onboarding preferences. Please try again.");
+    } finally {
+      setSavingOnboarding(false);
+    }
+  };
+
   const handleSignOut = async () => {
     await signOut();
     router.replace("/create-account");
@@ -428,6 +458,84 @@ export default function Settings() {
                   />
                 </View>
               </View>
+
+              {/* Onboarding Preferences Section */}
+              {onboardingData && (
+                <View style={styles.section}>
+                  <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Career Preferences</Text>
+                    {!editingOnboarding && (
+                      <Pressable
+                        onPress={() => setEditingOnboarding(true)}
+                        style={styles.editButton}
+                      >
+                        <Text style={styles.editButtonText}>Edit</Text>
+                      </Pressable>
+                    )}
+                  </View>
+
+                  {editingOnboarding ? (
+                    <View style={styles.editSection}>
+                      <Text style={styles.editSectionText}>
+                        Click the button below to update your career preferences.
+                      </Text>
+                      <View style={styles.buttonRow}>
+                        <Pressable
+                          style={[styles.secondaryButton, { flex: 1 }]}
+                          onPress={() => {
+                            setEditingOnboarding(false);
+                            setError("");
+                          }}
+                        >
+                          <Text style={styles.secondaryButtonLabel}>Cancel</Text>
+                        </Pressable>
+                        <Pressable
+                          style={[styles.primaryButton, { flex: 1, marginTop: 0 }]}
+                          onPress={() => router.push("/onboarding")}
+                          disabled={savingOnboarding}
+                        >
+                          {savingOnboarding ? (
+                            <ActivityIndicator color="#08090d" />
+                          ) : (
+                            <Text style={styles.primaryButtonLabel}>Edit Preferences</Text>
+                          )}
+                        </Pressable>
+                      </View>
+                    </View>
+                  ) : (
+                    <>
+                      <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Career Goal:</Text>
+                        <Text style={styles.infoValue}>{onboardingData.careerGoal}</Text>
+                      </View>
+                      <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Job Fields:</Text>
+                        <Text style={styles.infoValue}>
+                          {onboardingData.jobFields.length > 0
+                            ? onboardingData.jobFields.join(", ")
+                            : "None selected"}
+                        </Text>
+                      </View>
+                      <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Resume Status:</Text>
+                        <Text style={styles.infoValue}>{onboardingData.resumeStatus}</Text>
+                      </View>
+                      <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Help Needed:</Text>
+                        <Text style={styles.infoValue}>
+                          {onboardingData.helpNeeded.length > 0
+                            ? onboardingData.helpNeeded.join(", ")
+                            : "None selected"}
+                        </Text>
+                      </View>
+                      <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Availability:</Text>
+                        <Text style={styles.infoValue}>{onboardingData.availability}</Text>
+                      </View>
+                    </>
+                  )}
+                </View>
+              )}
 
               {error ? <Text style={styles.error}>{error}</Text> : null}
               {message ? <Text style={styles.info}>{message}</Text> : null}
@@ -596,5 +704,72 @@ const styles = StyleSheet.create({
     color: "#3fe1c3",
     fontSize: 14,
     marginTop: 4,
+  },
+  section: {
+    marginTop: 24,
+    paddingTop: 24,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.08)",
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "white",
+  },
+  editButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  editButtonText: {
+    color: "#3fe1c3",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  infoRow: {
+    flexDirection: "row",
+    marginTop: 12,
+    gap: 8,
+  },
+  infoLabel: {
+    color: "#96a3a1",
+    fontSize: 14,
+    fontWeight: "500",
+    minWidth: 100,
+  },
+  infoValue: {
+    color: "white",
+    fontSize: 14,
+    flex: 1,
+  },
+  infoBox: {
+    backgroundColor: "#11141b",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  infoText: {
+    color: "white",
+    fontSize: 14,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 16,
+  },
+  editSection: {
+    gap: 12,
+  },
+  editSectionText: {
+    color: "#96a3a1",
+    fontSize: 14,
+    marginBottom: 8,
   },
 });

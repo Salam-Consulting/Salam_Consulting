@@ -10,7 +10,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export default function TabLayout() {
   let colorScheme = useColorScheme() as "light" | "dark" | null;
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, onboardingCompleted } = useAuth();
   const router = useRouter();
 
   if (!colorScheme) colorScheme = "light";
@@ -19,11 +19,14 @@ export default function TabLayout() {
   useEffect(() => {
     if (!isAuthenticated) {
       router.replace("/create-account");
+    } else if (isAuthenticated && onboardingCompleted === false) {
+      // Redirect to onboarding if user hasn't completed it
+      router.replace("/onboarding");
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, onboardingCompleted, router]);
 
-  // Show nothing while redirecting
-  if (!isAuthenticated) {
+  // Show nothing while redirecting or checking onboarding
+  if (!isAuthenticated || onboardingCompleted === false) {
     return null;
   }
 

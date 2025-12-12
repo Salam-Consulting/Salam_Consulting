@@ -1,6 +1,7 @@
 import { useAuth } from "@/contexts/auth";
-import { Redirect, router } from "expo-router";
-import { useRef, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -13,11 +14,12 @@ import {
   View
 } from "react-native";
 export default function LoginScreen() {
-  const { signIn, loading, isAuthenticated } = useAuth();
+  const { signIn, signInWithGoogle, loading, isAuthenticated, onboardingCompleted, initializing } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [justLoggedIn, setJustLoggedIn] = useState(false);
   
   // Add ScrollView ref
   const scrollViewRef = useRef<ScrollView>(null);
@@ -38,19 +40,55 @@ export default function LoginScreen() {
     // On iOS, do nothing - let native iOS keyboard handling work
   };
 
-  // Redirect if already authenticated (only if auth is ready)
-  if (isAuthenticated === true) {
-    return <Redirect href="/(tabs)" />;
-  }
+  // Handle redirect ONLY after user explicitly logs in
+  // This ensures login screen is shown first, then onboarding check happens after login
+  useEffect(() => {
+    console.log("Login redirect check:", {
+      justLoggedIn,
+      isAuthenticated,
+      onboardingCompleted,
+    });
+
+    if (justLoggedIn && isAuthenticated && onboardingCompleted !== null) {
+      // Small delay to ensure login completes and onboarding status is ready
+      const timer = setTimeout(() => {
+        console.log("Redirecting based on onboarding status:", onboardingCompleted);
+        if (onboardingCompleted === false) {
+          console.log("Redirecting to onboarding");
+          router.replace("/onboarding");
+        } else {
+          console.log("Redirecting to main app");
+          router.replace("/(tabs)");
+        }
+        setJustLoggedIn(false);
+      }, 500); // Increased delay to ensure onboarding status is loaded
+      return () => clearTimeout(timer);
+    }
+  }, [justLoggedIn, isAuthenticated, onboardingCompleted]);
 
   const handleLogin = async () => {
     setError("");
 
     try {
       await signIn(email.trim(), password);
-      router.replace("/(tabs)");
+      setJustLoggedIn(true);
+      // Wait a moment for auth state to update, then redirect will happen
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to sign in.");
+      setJustLoggedIn(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError("");
+
+    try {
+      await signInWithGoogle();
+      setJustLoggedIn(true);
+      // Wait a moment for auth state to update, then redirect will happen
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to sign in with Google.");
+      setJustLoggedIn(false);
     }
   };
 
@@ -127,6 +165,24 @@ export default function LoginScreen() {
             ) : (
               <Text style={styles.ctaLabel}>Sign In</Text>
             )}
+          </Pressable>
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>OR</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.googleButton,
+              pressed && !loading ? { opacity: 0.85 } : null,
+            ]}
+            disabled={loading}
+            onPress={handleGoogleSignIn}
+          >
+            <Ionicons name="logo-google" size={20} color="white" />
+            <Text style={styles.googleButtonText}>Continue with Google</Text>
           </Pressable>
 
           <Pressable
@@ -223,5 +279,37 @@ const styles = StyleSheet.create({
   link: {
     color: "#3fe1c3",
     fontWeight: "600",
+  },
+  divider: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginVertical: 8,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.1)",
+  },
+  dividerText: {
+    color: "#96a3a1",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  googleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    backgroundColor: "#11141b",
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  googleButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "white",
   },
 });

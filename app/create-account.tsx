@@ -11,11 +11,12 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "@/contexts/auth";
 
 export default function CreateAccountScreen() {
-  const { signUp, loading } = useAuth();
+  const { signUp, signInWithGoogle, loading } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -152,6 +153,18 @@ export default function CreateAccountScreen() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setError("");
+    setInfo("");
+
+    try {
+      await signInWithGoogle();
+      router.replace("/(tabs)");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to sign in with Google.");
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -229,6 +242,24 @@ export default function CreateAccountScreen() {
             ) : (
               <Text style={styles.ctaLabel}>Create Account</Text>
             )}
+          </Pressable>
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>OR</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.googleButton,
+              pressed && !loading ? { opacity: 0.85 } : null,
+            ]}
+            disabled={loading}
+            onPress={handleGoogleSignIn}
+          >
+            <Ionicons name="logo-google" size={20} color="white" />
+            <Text style={styles.googleButtonText}>Continue with Google</Text>
           </Pressable>
 
           <Pressable onPress={() => router.replace("/")}>
@@ -317,6 +348,38 @@ const styles = StyleSheet.create({
   link: {
     color: "#3fe1c3",
     fontWeight: "600",
+  },
+  divider: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginVertical: 8,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.1)",
+  },
+  dividerText: {
+    color: "#96a3a1",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  googleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    backgroundColor: "#11141b",
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  googleButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "white",
   },
 });
 
