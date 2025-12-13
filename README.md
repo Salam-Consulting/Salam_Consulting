@@ -10,7 +10,23 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npm install
    ```
 
-2. Start the app
+2. Set up environment variables
+
+   Create a `.env` file in the root directory and add your API keys:
+
+   ```env
+   GOOGLE_WEB_CLIENT_ID=your_google_client_id_here
+   JSEARCH_API_KEY=your_rapidapi_key_here
+   ```
+
+   **To get the JSearch API Key:**
+   - Go to [RapidAPI JSearch](https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch)
+   - Sign up or log in to RapidAPI
+   - Subscribe to the JSearch API (free tier available)
+   - Copy your API key from the dashboard
+   - Add it to your `.env` file as `JSEARCH_API_KEY`
+
+3. Start the app
 
    ```bash
    npx expo start

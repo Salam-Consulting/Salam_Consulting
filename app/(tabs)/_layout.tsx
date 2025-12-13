@@ -1,5 +1,5 @@
 import { Tabs, useRouter } from "expo-router";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { HapticTab } from "@/components/haptic-tab";
@@ -75,13 +75,13 @@ export default function TabLayout() {
           }}
         />
 
-        {/* PROJECTS */}
+        {/* Jobs */}
         <Tabs.Screen
-          name="projects"
+          name="jobs"
           options={{
-            title: "Projects",
+            title: "Jobs",
             tabBarIcon: ({ color }) => (
-              <IconSymbol name="square.stack.3d.up.fill" size={26} color={color} />
+              <IconSymbol name="text.document" size={26} color={color} />
             ),
           }}
         />
@@ -116,6 +116,15 @@ export default function TabLayout() {
             tabBarIcon: ({ color }) => (
               <IconSymbol name="gearshape.fill" size={26} color={color} />
             ),
+          }}
+        />
+
+        {/* TRACK */}
+        <Tabs.Screen
+          name="track"
+          options={{
+            title: "Track",
+            href: null, // Hide from tab bar
           }}
         />
 

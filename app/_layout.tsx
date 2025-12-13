@@ -12,6 +12,7 @@ function RootNavigator() {
       <Stack.Screen name="create-account" />
       <Stack.Screen name="onboarding" />
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="applied" />
     </Stack>
   );
 }

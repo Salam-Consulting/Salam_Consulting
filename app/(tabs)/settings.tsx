@@ -19,6 +19,7 @@ import {
   View,
 } from "react-native";
 
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useAuth, type OnboardingData } from "@/contexts/auth";
 import { auth, db } from "@/lib/firebase";
 
@@ -366,7 +367,10 @@ export default function Settings() {
       >
         <ScrollView contentContainerStyle={[styles.scroll, styles.scrollInset]}>
           <View style={styles.header}>
-            <Text style={styles.title}>Profile Settings</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <IconSymbol name="gearshape.fill" size={28} color="#3fe1c3" />
+              <Text style={styles.title}>Profile Settings</Text>
+            </View>
             <Text style={styles.subtitle}>
               Update your profile details.
             </Text>

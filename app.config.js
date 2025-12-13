@@ -1,4 +1,9 @@
-import 'dotenv/config';
+import { config } from 'dotenv';
+import { resolve } from 'path';
+
+// Load .env from app folder first, then root as fallback
+config({ path: resolve(__dirname, 'app/.env') });
+config({ path: resolve(__dirname, '.env') });
 
 export default {
   expo: {
@@ -32,6 +37,7 @@ export default {
     },
     plugins: [
       "expo-router",
+      "expo-web-browser",
       [
         "expo-splash-screen",
         {
@@ -51,6 +57,7 @@ export default {
     },
     extra: {
       googleWebClientId: process.env.GOOGLE_WEB_CLIENT_ID,
+      jsearchApiKey: process.env.JSEARCH_API_KEY,
     },
   },
 };
