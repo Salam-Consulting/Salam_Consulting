@@ -33,34 +33,6 @@ export type Job = {
   job_salary_currency?: string;
 };
 
-const POPULAR_JOB_BOARDS = [
-  {
-    name: "LinkedIn Jobs",
-    url: "https://www.linkedin.com/jobs/",
-    icon: "linkedin",
-  },
-  {
-    name: "Indeed",
-    url: "https://www.indeed.com/",
-    icon: "briefcase",
-  },
-  {
-    name: "Glassdoor",
-    url: "https://www.glassdoor.com/Job/index.htm",
-    icon: "briefcase",
-  },
-  {
-    name: "Monster",
-    url: "https://www.monster.com/",
-    icon: "briefcase",
-  },
-  {
-    name: "ZipRecruiter",
-    url: "https://www.ziprecruiter.com/",
-    icon: "briefcase",
-  },
-];
-
 const handleOpenURL = async (url: string) => {
   try {
     await openBrowserAsync(url, {
@@ -179,6 +151,25 @@ const formatDatePosted = (dateString?: string): string => {
   }
 };
 
+const filterJobsBy24Hours = (jobs: Job[]): Job[] => {
+  const now = new Date();
+  const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  
+  return jobs.filter((job) => {
+    if (!job.job_posted_at_datetime_utc) {
+      return false; // Exclude jobs without posting dates
+    }
+    
+    try {
+      const postedDate = new Date(job.job_posted_at_datetime_utc);
+      return postedDate >= twentyFourHoursAgo;
+    } catch (error) {
+      console.error("Error parsing job date:", error);
+      return false; // Exclude jobs with invalid dates
+    }
+  });
+};
+
 const sortJobsByDate = (jobs: Job[]): Job[] => {
   return [...jobs].sort((a, b) => {
     // Jobs with dates come first
@@ -234,11 +225,13 @@ export default function Jobs() {
     
     try {
       const fetchedJobs = await fetchJobs(trimmedQuery, trimmedLocation);
+      // Filter jobs to only show those posted in the past 24 hours
+      const filteredJobs = filterJobsBy24Hours(fetchedJobs);
       // Sort jobs by date posted (most recent first)
-      const sortedJobs = sortJobsByDate(fetchedJobs);
+      const sortedJobs = sortJobsByDate(filteredJobs);
       setJobs(sortedJobs);
       
-      console.log(`✅ Found ${sortedJobs.length} jobs for "${trimmedQuery}${trimmedLocation ? ` in ${trimmedLocation}` : ""}"`);
+      console.log(`✅ Found ${sortedJobs.length} jobs posted in the past 24 hours for "${trimmedQuery}${trimmedLocation ? ` in ${trimmedLocation}` : ""}"`);
       
       // Load job statuses if user is authenticated
       if (isAuthenticated && sortedJobs.length > 0) {
@@ -248,7 +241,7 @@ export default function Jobs() {
       }
       
       if (sortedJobs.length === 0) {
-        setError("No jobs found. Try different keywords or location.");
+        setError("No jobs posted in the past 24 hours found. Try different keywords or location.");
       }
     } catch (err: any) {
       const errorMessage = err?.message || "Failed to fetch jobs. Please check your API key and try again.";
@@ -315,7 +308,7 @@ export default function Jobs() {
             )}
           </View>
           <Text style={styles.subtitle}>
-            Search for job opportunities and apply directly from the app.
+            Search for job opportunities posted in the past 24 hours and apply directly from the app.
           </Text>
         </View>
 
@@ -524,24 +517,23 @@ export default function Jobs() {
           </View>
         )}
 
-        {/* Popular Job Boards */}
-        {jobs.length === 0 && !isSearching && (
-          <View style={styles.jobBoardsSection}>
-            <Text style={styles.sectionTitle}>Popular Job Boards</Text>
-            <View style={styles.jobBoardsGrid}>
-              {POPULAR_JOB_BOARDS.map((board, index) => (
-                <Pressable
-                  key={index}
-                  style={({ pressed }) => [
-                    styles.jobBoardCard,
-                    pressed && { opacity: 0.9 },
-                  ]}
-                  onPress={() => handleOpenURL(board.url)}
-                >
-                  <Entypo name={board.icon as any} size={24} color="#3fe1c3" />
-                  <Text style={styles.jobBoardName}>{board.name}</Text>
-                </Pressable>
-              ))}
+        {/* Last Search Query */}
+        {jobs.length === 0 && !isSearching && lastSearchQuery && (
+          <View style={styles.lastSearchSection}>
+            <View style={styles.lastSearchHeader}>
+              <Entypo name="clock" size={20} color="#3fe1c3" />
+              <Text style={styles.sectionTitle}>Last Search</Text>
+            </View>
+            <View style={styles.lastSearchCard}>
+              <Text style={styles.lastSearchQuery}>
+                {lastSearchQuery}
+                {lastSearchLocation && (
+                  <Text style={styles.lastSearchLocation}> in {lastSearchLocation}</Text>
+                )}
+              </Text>
+              <Text style={styles.lastSearchMessage}>
+                No jobs posted in the past 24 hours found for this search.
+              </Text>
             </View>
           </View>
         )}
@@ -652,30 +644,37 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#08090d",
   },
-  jobBoardsSection: {
-    gap: 16,
-  },
-  jobBoardsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  lastSearchSection: {
     gap: 12,
   },
-  jobBoardCard: {
+  lastSearchHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  lastSearchCard: {
     backgroundColor: "#11141b",
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
     borderColor: "rgba(63, 225, 195, 0.3)",
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: "47%",
     gap: 8,
   },
-  jobBoardName: {
-    fontSize: 14,
-    color: "white",
+  lastSearchQuery: {
+    fontSize: 16,
+    color: "#3fe1c3",
     fontWeight: "600",
-    textAlign: "center",
+  },
+  lastSearchLocation: {
+    fontSize: 16,
+    color: "#b0c7c0",
+    fontWeight: "400",
+  },
+  lastSearchMessage: {
+    fontSize: 14,
+    color: "#b0c7c0",
+    lineHeight: 20,
+    marginTop: 4,
   },
   errorContainer: {
     backgroundColor: "#2a1f1f",

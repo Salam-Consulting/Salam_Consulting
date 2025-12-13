@@ -24,6 +24,11 @@ const MAPPING = {
   'bubble.left.and.bubble.right.fill': 'chat',
   'person.crop.circle.fill': 'account-circle',
   'gearshape.fill': 'settings',
+  'text.document': 'description',
+  'list.bullet': 'list',
+  'checkmark.circle.fill': 'check-circle',
+  'xmark.circle.fill': 'cancel',
+  'lock.fill': 'lock',
 } as IconMapping;
 
 /**

@@ -67,7 +67,7 @@ export default function Home() {
 
           <Text style={styles.title}>SALAM CONSULTING</Text>
           <Text style={styles.subtitle}>HUMAN DRIVEN</Text>
-          <Text style={styles.subtitle}>Development Day 4: Ahmad Noori</Text>
+          <Text style={styles.subtitle}>Development Day 5: Ahmad Noori</Text>
         </Animated.View>
       </View>
     </SafeAreaView>

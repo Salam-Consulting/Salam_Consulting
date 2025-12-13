@@ -35,7 +35,6 @@ export default function TabLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarButton: HapticTab,
 
           // Active tab color (Salam Consulting green)
           tabBarActiveTintColor: "#3fe1c3",
@@ -57,6 +56,7 @@ export default function TabLayout() {
           name="index"
           options={{
             title: "Home",
+            tabBarButton: HapticTab,
             tabBarIcon: ({ color }) => (
               <IconSymbol name="house.fill" size={26} color={color} />
             ),
@@ -69,6 +69,7 @@ export default function TabLayout() {
           name="services"
           options={{
             title: "Services",
+            tabBarButton: HapticTab,
             tabBarIcon: ({ color }) => (
               <IconSymbol name="briefcase.fill" size={26} color={color} />
             ),
@@ -80,6 +81,7 @@ export default function TabLayout() {
           name="jobs"
           options={{
             title: "Jobs",
+            tabBarButton: HapticTab,
             tabBarIcon: ({ color }) => (
               <IconSymbol name="text.document" size={26} color={color} />
             ),
@@ -91,6 +93,7 @@ export default function TabLayout() {
           name="contact"
           options={{
             title: "Contact",
+            tabBarButton: HapticTab,
             tabBarIcon: ({ color }) => (
               <IconSymbol name="bubble.left.and.bubble.right.fill" size={26} color={color} />
             ),
@@ -102,6 +105,7 @@ export default function TabLayout() {
           name="about"
           options={{
             title: "About",
+            tabBarButton: HapticTab,
             tabBarIcon: ({ color }) => (
               <IconSymbol name="person.crop.circle.fill" size={26} color={color} />
             ),
@@ -113,18 +117,18 @@ export default function TabLayout() {
           name="settings"
           options={{
             title: "Settings",
+            tabBarButton: HapticTab,
             tabBarIcon: ({ color }) => (
               <IconSymbol name="gearshape.fill" size={26} color={color} />
             ),
           }}
         />
 
-        {/* TRACK */}
+        {/* TRACK - Hidden from tab bar */}
         <Tabs.Screen
           name="track"
           options={{
-            title: "Track",
-            href: null, // Hide from tab bar
+            href: null, // Hide from tab bar on all platforms
           }}
         />
 
