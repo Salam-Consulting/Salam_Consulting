@@ -4,6 +4,7 @@ import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
 import * as firebaseAuth from "firebase/auth";
 import { getAuth, initializeAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
+import { getStorage, type FirebaseStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCq4w4iS5DUcnQ7p9WzaS6G5M9h0vC_8UU",
@@ -18,6 +19,7 @@ const firebaseConfig = {
 let app!: FirebaseApp;
 let auth!: Auth;
 let db!: Firestore;
+let storage!: FirebaseStorage;
 
 try {
   console.log("Initializing Firebase...");
@@ -52,6 +54,9 @@ try {
   
   console.log("Initializing Firestore...");
   db = getFirestore(app);
+
+  console.log("Initializing Firebase Storage...");
+  storage = getStorage(app);
   console.log("Firebase initialization complete");
 } catch (error) {
   console.error("Firebase initialization error:", error);
@@ -66,11 +71,14 @@ try {
   if (!db) {
     db = getFirestore(app);
   }
+  if (!storage) {
+    storage = getStorage(app);
+  }
   console.warn("App will continue with Firebase - some features may not work as expected");
 }
 
 // Get Google Web Client ID from environment variables
 const googleWebClientId = Constants.expoConfig?.extra?.googleWebClientId || process.env.GOOGLE_WEB_CLIENT_ID;
 
-export { app, auth, db, firebaseConfig, googleWebClientId };
+export { app, auth, db, storage, firebaseConfig, googleWebClientId };
 

@@ -88,6 +88,18 @@ export default function TabLayout() {
           }}
         />
 
+        {/* Resume */}
+        <Tabs.Screen
+          name="resume"
+          options={{
+            title: "Resume",
+            tabBarButton: HapticTab,
+            tabBarIcon: ({ color }) => (
+              <IconSymbol name="doc.text.fill" size={26} color={color} />
+            ),
+          }}
+        />
+
         {/* CONTACT */}
         <Tabs.Screen
           name="contact"

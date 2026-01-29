@@ -14,7 +14,7 @@ import {
   View
 } from "react-native";
 export default function LoginScreen() {
-  const { signIn, signInWithGoogle, loading, isAuthenticated, onboardingCompleted, initializing } = useAuth();
+  const { signIn, signInWithGoogle, loading, isAuthenticated, onboardingCompleted, initializing, googleSignInReady } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -176,13 +176,16 @@ export default function LoginScreen() {
           <Pressable
             style={({ pressed }) => [
               styles.googleButton,
-              pressed && !loading ? { opacity: 0.85 } : null,
+              pressed && !loading && googleSignInReady ? { opacity: 0.85 } : null,
+              !googleSignInReady ? { opacity: 0.5 } : null,
             ]}
-            disabled={loading}
+            disabled={loading || !googleSignInReady}
             onPress={handleGoogleSignIn}
           >
             <Ionicons name="logo-google" size={20} color="white" />
-            <Text style={styles.googleButtonText}>Continue with Google</Text>
+            <Text style={styles.googleButtonText}>
+              {googleSignInReady ? "Continue with Google" : "Loading..."}
+            </Text>
           </Pressable>
 
           <Pressable

@@ -1,6 +1,4 @@
-import * as AuthSession from "expo-auth-session";
-import Constants from "expo-constants";
-import * as Crypto from "expo-crypto";
+import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
 import { FirebaseError } from "firebase/app";
 import {
@@ -28,7 +26,6 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { Platform } from "react-native";
 
 // Complete the auth session for web browser
 WebBrowser.maybeCompleteAuthSession();
@@ -41,6 +38,7 @@ type AuthContextValue = {
   loading: boolean;
   initializing: boolean;
   onboardingCompleted: boolean | null; // null = not loaded yet
+  googleSignInReady: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (fullName: string, email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
@@ -106,6 +104,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(false); // Start as false - don't block
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null);
+  const [googleError, setGoogleError] = useState<string | null>(null);
+
+  // Google Auth hook
+  console.log("Google Web Client ID:", googleWebClientId);
+
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    clientId: googleWebClientId || undefined,
+  });
+
+  console.log("Google Auth request ready:", !!request);
+  console.log("Google Auth redirect URI:", request?.redirectUri);
+
+  // Handle Google Sign-In response
+  useEffect(() => {
+    if (response?.type === "success") {
+      const { id_token } = response.params;
+
+      if (id_token) {
+        // Create Firebase credential and sign in
+        const credential = GoogleAuthProvider.credential(id_token);
+        signInWithCredential(auth, credential)
+          .then((userCredential) => {
+            return syncUserDocument(userCredential.user);
+          })
+          .catch((error) => {
+            console.error("Firebase sign-in error:", error);
+            if (error instanceof FirebaseError) {
+              switch (error.code) {
+                case "auth/account-exists-with-different-credential":
+                  setGoogleError("An account already exists with this email using a different sign-in method.");
+                  break;
+                case "auth/invalid-credential":
+                  setGoogleError("The credential is invalid or has expired. Please try again.");
+                  break;
+                default:
+                  setGoogleError("Unable to sign in with Google. Please try again.");
+              }
+            } else {
+              setGoogleError("Unable to sign in with Google. Please try again.");
+            }
+          })
+          .finally(() => {
+            setLoading(false);
+          });
+      } else {
+        setLoading(false);
+        setGoogleError("No ID token received from Google.");
+      }
+    } else if (response?.type === "error") {
+      setLoading(false);
+      console.error("Google OAuth error:", response.error);
+      setGoogleError(response.error?.message || "Google Sign-In failed.");
+    } else if (response?.type === "cancel") {
+      setLoading(false);
+    }
+  }, [response]);
 
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
@@ -310,108 +364,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error("Google Web Client ID is not configured. Please add it to your .env file.");
     }
 
+    if (!request) {
+      throw new Error("Google Sign-In is not ready. Please try again.");
+    }
+
     setLoading(true);
+    setGoogleError(null);
+
     try {
-      let idToken: string;
-
-      if (Platform.OS === "ios" || Platform.OS === "android") {
-        // Use the app's custom URL scheme for OAuth redirect
-        // This must match what's configured in app.config.js and Google Cloud Console
-        const schemeValue = Constants.expoConfig?.scheme;
-        const scheme = Array.isArray(schemeValue) ? schemeValue[0] : (schemeValue || "salamapp");
-        const redirectUri = AuthSession.makeRedirectUri({
-          scheme: scheme,
-        });
-        
-        console.log("Using redirect URI:", redirectUri);
-        console.log("App scheme:", scheme);
-        
-        // Generate a random state for security
-        const state = await Crypto.digestStringAsync(
-          Crypto.CryptoDigestAlgorithm.SHA256,
-          Math.random().toString(),
-        );
-        
-        const request = new AuthSession.AuthRequest({
-          clientId: googleWebClientId,
-          scopes: ["openid", "profile", "email"],
-          responseType: AuthSession.ResponseType.IdToken,
-          redirectUri: redirectUri,
-          state: state,
-        });
-
-        const discovery = {
-          authorizationEndpoint: "https://accounts.google.com/o/oauth2/v2/auth",
-          tokenEndpoint: "https://oauth2.googleapis.com/token",
-          revocationEndpoint: "https://oauth2.googleapis.com/revoke",
-        };
-
-        // Start the OAuth flow
-        // IMPORTANT: Make sure the redirect URI (shown in logs) is added to your
-        // Google Cloud Console OAuth 2.0 Client ID's authorized redirect URIs
-        const result = await request.promptAsync(discovery);
-
-        if (result.type !== "success") {
-          if (result.type === "error") {
-            const errorMsg = result.error?.message || "Unknown error";
-            console.error("OAuth error details:", result.error);
-            console.error("Redirect URI used:", redirectUri);
-            throw new Error(`Google Sign-In failed: ${errorMsg}`);
-          }
-          if (result.type === "cancel") {
-            console.warn("OAuth was cancelled by user or failed to redirect");
-            console.warn("Redirect URI used:", redirectUri);
-            console.warn("Make sure this URI is registered in Google Cloud Console");
-            throw new Error("Google Sign-In was cancelled. Please try again.");
-          }
-          throw new Error("Google Sign-In failed. Please try again.");
-        }
-
-        if (!result.params.id_token) {
-          console.error("OAuth response params:", result.params);
-          throw new Error("No ID token received from Google. Please try again.");
-        }
-
-        idToken = result.params.id_token as string;
-      } else {
-        throw new Error("Google Sign-In is not yet supported on web.");
-      }
-
-      // Create Firebase credential with Google ID token
-      const credential = GoogleAuthProvider.credential(idToken);
-      const userCredential = await signInWithCredential(auth, credential);
-
-      // Sync user document
-      await syncUserDocument(userCredential.user);
+      await promptAsync();
+      // Response is handled in the useEffect above
     } catch (error) {
+      setLoading(false);
       console.error("Google Sign-In error:", error);
-      
-      if (error instanceof FirebaseError) {
-        let message = "Unable to sign in with Google. Please try again.";
-
-        switch (error.code) {
-          case "auth/account-exists-with-different-credential":
-            message = "An account already exists with this email address using a different sign-in method.";
-            break;
-          case "auth/invalid-credential":
-            message = "The credential is invalid or has expired. Please try again.";
-            break;
-          case "auth/operation-not-allowed":
-            message = "Google Sign-In is not enabled. Please enable it in Firebase Console.";
-            break;
-          default:
-            message = error.message || "Something went wrong. Please try again.";
-        }
-
-        throw new Error(message);
-      }
-      
-      // Re-throw other errors as-is
       throw error instanceof Error
         ? error
         : new Error("Unable to sign in with Google. Please try again.");
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -446,13 +414,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading,
       initializing,
       onboardingCompleted,
+      googleSignInReady: !!request,
       signIn,
       signUp,
       signInWithGoogle,
       signOut,
       completeOnboarding,
     }),
-    [currentUser, initializing, loading, onboardingCompleted],
+    [currentUser, initializing, loading, onboardingCompleted, request],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
