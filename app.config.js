@@ -2,8 +2,8 @@ import { config } from 'dotenv';
 import { resolve } from 'path';
 
 // Load .env from app folder first, then root as fallback
-config({ path: resolve(__dirname, 'app/.env') });
-config({ path: resolve(__dirname, '.env') });
+config({ path: resolve(__dirname, 'app/.env'), quiet: true });
+config({ path: resolve(__dirname, '.env'), quiet: true });
 
 export default {
   expo: {
@@ -56,6 +56,9 @@ export default {
       reactCompiler: true
     },
     extra: {
+      eas: {
+        projectId: "19c2f5f7-cd87-436e-ae41-e04ac8e0525b",
+      },
       googleWebClientId: process.env.GOOGLE_WEB_CLIENT_ID,
       jsearchApiKey: process.env.JSEARCH_API_KEY,
       firebaseApiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,

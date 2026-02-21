@@ -1,0 +1,22 @@
+# Based on .gitignore - EAS uses this instead when present
+expo-env.d.ts
+node_modules/
+.expo/
+dist/
+web-build/
+.env
+.env*.local
+.DS_Store
+*.pem
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Gradle cache - avoids EBUSY/lock errors when OneDrive or Gradle has files open
+android/.gradle/
+android/build/

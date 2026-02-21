@@ -1,5 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Clipboard from "expo-clipboard";
 import * as DocumentPicker from "expo-document-picker";
+import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
 import * as WebBrowser from "expo-web-browser";
 import {
   collection,
@@ -28,11 +31,17 @@ import {
   Share,
   StyleSheet,
   Text,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { auth, db, storage } from "@/lib/firebase";
+import {
+  generateFormattedResume,
+  parseResumeText,
+  saveResumeAsDocx,
+  type ParsedResume,
+} from "@/lib/resumeFormatter";
 
 type ResumeData = {
   id: string;
@@ -51,6 +60,9 @@ export default function ResumeScreen() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [initialLoading, setInitialLoading] = useState(true);
   const [showAllResumes, setShowAllResumes] = useState(false);
+  const [showFormattedResume, setShowFormattedResume] = useState(false);
+  const [formattedText, setFormattedText] = useState("");
+  const [formatting, setFormatting] = useState(false);
 
   // Load existing resumes on mount
   useEffect(() => {
@@ -269,6 +281,33 @@ export default function ResumeScreen() {
     );
   };
 
+  const formatResume = async (resume: ResumeData) => {
+    try {
+      setFormatting(true);
+      const formatted = await generateFormattedResume(resume.url, resume.mimeType);
+      setFormattedText(formatted);
+      setShowFormattedResume(true);
+    } catch (error) {
+      console.error("Error formatting resume:", error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to extract text. Make sure the document contains readable text (not scanned images).";
+      Alert.alert("Error", message);
+    } finally {
+      setFormatting(false);
+    }
+  };
+
+  const copyFormattedText = async () => {
+    try {
+      await Clipboard.setStringAsync(formattedText);
+      Alert.alert("Success", "Formatted resume copied to clipboard!");
+    } catch (error) {
+      Alert.alert("Error", "Failed to copy to clipboard.");
+    }
+  };
+
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;
@@ -285,6 +324,65 @@ export default function ResumeScreen() {
   };
 
   const latestResume = resumes[0];
+  const parsedResume: ParsedResume | null = formattedText
+    ? parseResumeText(formattedText)
+    : null;
+
+  const saveResumeAsPdf = async (resume: ParsedResume) => {
+    const escapeHtml = (text: string): string =>
+      text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+
+    const html = `
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding: 24px; color: #111; }
+            h1 { margin: 0 0 8px; font-size: 26px; }
+            .contact { margin: 0 0 16px; font-size: 12px; color: #444; }
+            .section { margin-top: 18px; }
+            .section h2 { font-size: 13px; margin: 0 0 8px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+            pre { white-space: pre-wrap; font-family: "Courier New", monospace; font-size: 11px; line-height: 1.45; margin: 0; }
+          </style>
+        </head>
+        <body>
+          <h1>${escapeHtml(resume.name || "Resume")}</h1>
+          <p class="contact">${escapeHtml(
+            [
+              resume.location,
+              resume.phone,
+              resume.email,
+              resume.linkedin,
+              resume.github,
+              resume.portfolio,
+            ]
+              .filter(Boolean)
+              .join(" | ")
+          )}</p>
+          <div class="section">
+            <h2>Formatted Content</h2>
+            <pre>${escapeHtml(formattedText)}</pre>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const { uri } = await Print.printToFileAsync({ html });
+    if (!(await Sharing.isAvailableAsync())) {
+      throw new Error("Sharing is not available on this device.");
+    }
+
+    await Sharing.shareAsync(uri, {
+      UTI: "com.adobe.pdf",
+      mimeType: "application/pdf",
+      dialogTitle: "Save Resume as PDF",
+    });
+  };
 
   if (initialLoading) {
     return (
@@ -413,6 +511,24 @@ export default function ResumeScreen() {
             </View>
 
             <Pressable
+              style={styles.formatButton}
+              onPress={() => formatResume(latestResume)}
+              disabled={loading || formatting}
+            >
+              {formatting ? (
+                <>
+                  <ActivityIndicator size="small" color="white" />
+                  <Text style={styles.formatButtonText}>Formatting...</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="document-text-outline" size={20} color="white" />
+                  <Text style={styles.formatButtonText}>Format to Template</Text>
+                </>
+              )}
+            </Pressable>
+
+            <Pressable
               style={styles.uploadNewButtonFull}
               onPress={pickAndUploadDocument}
               disabled={loading || uploading}
@@ -456,7 +572,7 @@ export default function ResumeScreen() {
             </View>
             <View style={styles.formatItem}>
               <Ionicons name="document" size={20} color="#3fe1c3" />
-              <Text style={styles.formatText}>Word (.doc, .docx)</Text>
+              <Text style={styles.formatText}>Word (.docx)</Text>
             </View>
           </View>
         </View>
@@ -559,9 +675,186 @@ export default function ResumeScreen() {
           </ScrollView>
         </SafeAreaView>
       </Modal>
+
+       {/* Formatted Resume Modal */}
+       <Modal
+        visible={showFormattedResume}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowFormattedResume(false)}
+      >
+        <SafeAreaView style={styles.modalSafe}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Formatted Resume</Text>
+            <Pressable
+              style={styles.closeButton}
+              onPress={() => setShowFormattedResume(false)}
+            >
+              <Ionicons name="close" size={24} color="white" />
+            </Pressable>
+          </View>
+
+
+          <ScrollView
+            contentContainerStyle={styles.modalContent}
+            showsVerticalScrollIndicator={true}
+          >
+            <View style={styles.resumeSheet}>
+
+
+              {/* Name */}
+              {parsedResume?.name ? (
+                <Text style={styles.resumeName}>{parsedResume.name}</Text>
+              ) : null}
+
+
+              {/* Contact line */}
+              {parsedResume && (
+                <Text style={styles.resumeContact}>
+                  {[
+                    parsedResume.location,
+                    parsedResume.phone,
+                    parsedResume.email,
+                    parsedResume.linkedin,
+                    parsedResume.github,
+                    parsedResume.portfolio,
+                  ]
+                    .filter(Boolean)
+                    .join(" | ")}
+                </Text>
+              )}
+
+
+              <View style={styles.resumeDivider} />
+
+
+              {/* Education */}
+              {parsedResume?.education && parsedResume.education.length > 0 && (
+                <View style={styles.resumeSection}>
+                  <Text style={styles.resumeSectionHeader}>EDUCATION</Text>
+                  <View style={styles.resumeSectionUnderline} />
+                  {parsedResume.education.map((edu, idx) => (
+                    <View key={idx} style={styles.resumeEntryBlock}>
+                      <View style={styles.resumeRow}>
+                        <Text style={styles.resumeBold}>
+                          {edu.degree}
+                          {edu.institution ? (
+                            <Text style={styles.resumeItalicInline}>{`, ${edu.institution}`}</Text>
+                          ) : null}
+                        </Text>
+                        <Text style={styles.resumeDate}>{edu.date}</Text>
+                      </View>
+                      {edu.gpa ? (
+                        <Text style={styles.resumeSubText}>{edu.gpa}</Text>
+                      ) : null}
+                    </View>
+                  ))}
+                </View>
+              )}
+
+
+              {/* Technical Skills */}
+              {parsedResume?.skills ? (
+                <View style={styles.resumeSection}>
+                  <Text style={styles.resumeSectionHeader}>TECHNICAL SKILLS</Text>
+                  <View style={styles.resumeSectionUnderline} />
+                  <Text style={styles.resumeBodyText}>{parsedResume.skills}</Text>
+                </View>
+              ) : null}
+
+
+              {/* Professional Experience */}
+              {parsedResume?.experience && parsedResume.experience.length > 0 && (
+                <View style={styles.resumeSection}>
+                  <Text style={styles.resumeSectionHeader}>PROFESSIONAL EXPERIENCE</Text>
+                  <View style={styles.resumeSectionUnderline} />
+                  {parsedResume.experience.map((exp, idx) => (
+                    <View key={idx} style={styles.resumeEntryBlock}>
+                      <View style={styles.resumeRow}>
+                        <Text style={styles.resumeBold}>{exp.company}</Text>
+                        <Text style={styles.resumeDate}>{exp.date}</Text>
+                      </View>
+                      {(exp.position || exp.location) && (
+                        <View style={styles.resumeRow}>
+                          <Text style={styles.resumeItalic}>{exp.position}</Text>
+                          <Text style={styles.resumeItalic}>{exp.location}</Text>
+                        </View>
+                      )}
+                      {exp.bullets.map((bullet, bIdx) => (
+                        <View key={bIdx} style={styles.resumeBulletRow}>
+                          <Text style={styles.resumeBulletDot}>•</Text>
+                          <Text style={styles.resumeBulletText}>{bullet}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ))}
+                </View>
+              )}
+
+
+              {/* Technical Projects */}
+              {parsedResume?.projects && parsedResume.projects.length > 0 && (
+                <View style={styles.resumeSection}>
+                  <Text style={styles.resumeSectionHeader}>TECHNICAL PROJECTS</Text>
+                  <View style={styles.resumeSectionUnderline} />
+                  {parsedResume.projects.map((proj, idx) => (
+                    <View key={idx} style={styles.resumeEntryBlock}>
+                      <Text style={styles.resumeBold}>
+                        {proj.name}
+                        {proj.technologies ? (
+                          <Text style={styles.resumeItalicInline}>
+                            {" "}({proj.technologies})
+                          </Text>
+                        ) : null}
+                      </Text>
+                      {proj.bullets.map((bullet, bIdx) => (
+                        <View key={bIdx} style={styles.resumeBulletRow}>
+                          <Text style={styles.resumeBulletDot}>•</Text>
+                          <Text style={styles.resumeBulletText}>{bullet}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ))}
+                </View>
+              )}
+
+
+            </View>
+
+
+            <View style={styles.formattedActions}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.savePdfButton,
+                  pressed && styles.savePdfButtonPressed,
+                ]}
+                onPress={async () => {
+                  try {
+                    if (!parsedResume) throw new Error("No resume data to export");
+                    await saveResumeAsDocx(parsedResume);
+                  } catch (error) {
+                    console.error("Error saving Word document:", error);
+                    Alert.alert(
+                      "Export Failed",
+                      error instanceof Error ? error.message : "Could not save document."
+                    );
+                  }
+                }}
+              >
+                <Ionicons name="document-text-outline" size={20} color="white" />
+                <Text style={styles.savePdfButtonText}>Save as Word</Text>
+              </Pressable>
+            </View>
+
+
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
+
+
 
 const styles = StyleSheet.create({
   safe: {
@@ -909,6 +1202,24 @@ const styles = StyleSheet.create({
   listItemMeta: {
     fontSize: 13,
     color: "#6f7d83",
+    marginBottom: 8,
+  },
+  formatSmallButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(63, 225, 195, 0.1)",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "rgba(63, 225, 195, 0.3)",
+    alignSelf: "flex-start",
+  },
+  formatSmallText: {
+    fontSize: 12,
+    color: "#3fe1c3",
+    fontWeight: "600",
   },
   listItemActions: {
     flexDirection: "row",
@@ -941,5 +1252,200 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#3fe1c3",
+  },
+  formatButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#3fe1c3",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  formatButtonText: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: 15,
+  },
+  formattedContainer: {
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "rgba(63, 225, 195, 0.2)",
+  },
+  formattedTextInput: {
+    color: "white",
+    fontSize: 13,
+    fontFamily: "monospace",
+    minHeight: 400,
+    lineHeight: 20,
+  },
+  formattedActions: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 12,
+  },
+  savePdfButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#3fe1c3",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  savePdfButtonPressed: {
+    opacity: 0.85,
+  },
+  savePdfButtonText: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: 15,
+  },
+  resumeSheet: {
+    backgroundColor: "white",
+    borderRadius: 10,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    marginBottom: 20,
+  },
+  resumeName: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#111827",
+    textAlign: "center",
+  },
+  resumeContact: {
+    marginTop: 8,
+    fontSize: 11,
+    color: "#374151",
+    textAlign: "center",
+    lineHeight: 16,
+  },
+  resumeDivider: {
+    height: 1,
+    backgroundColor: "#e5e7eb",
+    marginTop: 10,
+    marginBottom: 12,
+  },
+  resumeSection: {
+    marginTop: 8,
+  },
+  resumeSectionHeader: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#111827",
+    letterSpacing: 0.6,
+  },
+  resumeSectionUnderline: {
+    height: 1,
+    backgroundColor: "#111827",
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  resumeEntryBlock: {
+    marginBottom: 8,
+  },
+  resumeRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 8,
+  },
+  resumeBold: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  resumeDate: {
+    fontSize: 11,
+    color: "#111827",
+  },
+  resumeSubText: {
+    marginTop: 3,
+    fontSize: 11,
+    color: "#374151",
+  },
+  resumeBodyText: {
+    fontSize: 11,
+    color: "#111827",
+    lineHeight: 17,
+  },
+  resumeItalic: {
+    flex: 1,
+    fontSize: 11,
+    fontStyle: "italic",
+    color: "#374151",
+  },
+  resumeItalicInline: {
+    fontSize: 12,
+    fontWeight: "400",
+    fontStyle: "italic",
+    color: "#374151",
+  },
+  resumeBulletRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginTop: 3,
+  },
+  resumeBulletDot: {
+    fontSize: 11,
+    color: "#111827",
+    marginRight: 6,
+    lineHeight: 17,
+  },
+  resumeBulletText: {
+    flex: 1,
+    fontSize: 11,
+    color: "#111827",
+    lineHeight: 17,
+  },
+  copyButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#3fe1c3",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  copyButtonText: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: 15,
+  },
+  shareButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "rgba(63, 225, 195, 0.15)",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(63, 225, 195, 0.3)",
+  },
+  shareButtonText: {
+    color: "#3fe1c3",
+    fontWeight: "600",
+    fontSize: 15,
+  },
+  formattedHint: {
+    color: "#6f7d83",
+    fontSize: 13,
+    textAlign: "center",
+    fontStyle: "italic",
   },
 });

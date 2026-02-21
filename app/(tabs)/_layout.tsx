@@ -51,18 +51,13 @@ export default function TabLayout() {
         }}
       >
 
-        {/* HOME */}
+        {/* HOME - Hidden from tab bar */}
         <Tabs.Screen
           name="index"
           options={{
-            title: "Home",
-            tabBarButton: HapticTab,
-            tabBarIcon: ({ color }) => (
-              <IconSymbol name="house.fill" size={26} color={color} />
-            ),
+            href: null, // Hide from tab bar
           }}
         />
-
 
         {/* SERVICES */}
         <Tabs.Screen
