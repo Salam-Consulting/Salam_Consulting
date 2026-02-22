@@ -38,7 +38,9 @@ export default function Services() {
       >
         <View style={styles.header}>
           <View style={styles.titleRow}>
-            <IconSymbol name="briefcase.fill" size={28} color="#3fe1c3" />
+            <View style={styles.iconContainer}>
+              <IconSymbol name="briefcase.fill" size={22} color="#3fe1c3" />
+            </View>
             <Text style={styles.title}>Services</Text>
           </View>
           <Text style={styles.subtitle}>
@@ -47,173 +49,244 @@ export default function Services() {
         </View>
 
         {/* Check out Packages Box */}
-        <Pressable
-          style={({ pressed }) => [
-            styles.mainBox,
-            expandedSection === "packages" && styles.mainBoxExpanded,
-            pressed && { opacity: 0.9 },
-          ]}
-          onPress={() => toggleSection("packages")}
-        >
-          <View style={styles.mainBoxHeader}>
-            <Text style={styles.mainBoxTitle}>Check out Packages</Text>
-            <Text style={styles.mainBoxIcon}>
-              {expandedSection === "packages" ? "▼" : "▶"}
-            </Text>
-          </View>
+        <View style={styles.sectionContainer}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.sectionHeader,
+              pressed && { opacity: 0.8 },
+            ]}
+            onPress={() => toggleSection("packages")}
+          >
+            <Text style={styles.sectionTitle}>Check out Packages</Text>
+            <View style={styles.toggleIconContainer}>
+              <Text style={styles.toggleIcon}>
+                {expandedSection === "packages" ? "▼" : "▶"}
+              </Text>
+            </View>
+          </Pressable>
+          
           {expandedSection === "packages" && (
             <View style={styles.expandedContent}>
               {/* Silver Package */}
-              <View style={styles.packageCard}>
-                <Text style={styles.packageEmoji}>🥈</Text>
-                <Text style={styles.packageName}>Salam Silver Package — $300</Text>
-                <Text style={styles.packageDescription}>
-                  <Text style={styles.bold}>4 weekly 1-hour coaching sessions</Text> covering resume building, interview prep, LinkedIn optimization, offer negotiation, and application management.
-                </Text>
-                <Text style={styles.packageFeature}>Includes access to all Salam events.</Text>
-                <Text style={styles.packageValidity}>Valid for 1 month.</Text>
+              <View style={styles.itemCard}>
+                <View style={styles.itemTopRow}>
+                  <View style={styles.itemIconWrapper}>
+                    <Text style={styles.emoji}>🥈</Text>
+                  </View>
+                  <View style={styles.itemDetails}>
+                    <Text style={styles.itemName}>Salam Silver</Text>
+                    <Text style={styles.itemCategory}>Valid for 1 month</Text>
+                  </View>
+                  <View style={styles.itemPriceContainer}>
+                    <Text style={styles.itemPrice}>$300</Text>
+                  </View>
+                </View>
+                <View style={styles.itemBody}>
+                  <Text style={styles.itemDescription}>
+                    <Text style={styles.boldWhite}>4 weekly 1-hour coaching sessions</Text> covering resume building, interview prep, LinkedIn optimization, offer negotiation, and application management.
+                  </Text>
+                  <Text style={styles.itemFeature}>Includes access to all Salam events.</Text>
+                </View>
                 <Pressable
                   style={({ pressed }) => [
-                    styles.checkoutButton,
-                    pressed && { opacity: 0.9 },
+                    styles.actionButton,
+                    pressed && styles.actionButtonPressed,
                   ]}
                   onPress={() => handleOpenURL(CHECKOUT_URLS.silver)}
                 >
-                  <Text style={styles.checkoutButtonText}>Checkout Link</Text>
+                  <Text style={styles.actionButtonText}>Checkout Link</Text>
                 </Pressable>
               </View>
 
               {/* Gold Package */}
-              <View style={styles.packageCard}>
-                <Text style={styles.packageEmoji}>🥇</Text>
-                <Text style={styles.packageName}>Salam Gold Package — $480</Text>
-                <Text style={styles.packageDescription}>
-                  <Text style={styles.bold}>8 weekly 1-hour coaching sessions</Text> covering resume building, interview prep, LinkedIn optimization, offer negotiation, and application management.
-                </Text>
-                <Text style={styles.packageFeature}>Includes access to all Salam events.</Text>
-                <Text style={styles.packageValidity}>Valid for 2 months.</Text>
+              <View style={styles.itemCard}>
+                <View style={styles.itemTopRow}>
+                  <View style={styles.itemIconWrapper}>
+                    <Text style={styles.emoji}>🥇</Text>
+                  </View>
+                  <View style={styles.itemDetails}>
+                    <Text style={styles.itemName}>Salam Gold</Text>
+                    <Text style={styles.itemCategory}>Valid for 2 months</Text>
+                  </View>
+                  <View style={styles.itemPriceContainer}>
+                    <Text style={styles.itemPrice}>$480</Text>
+                  </View>
+                </View>
+                <View style={styles.itemBody}>
+                  <Text style={styles.itemDescription}>
+                    <Text style={styles.boldWhite}>8 weekly 1-hour coaching sessions</Text> covering resume building, interview prep, LinkedIn optimization, offer negotiation, and application management.
+                  </Text>
+                  <Text style={styles.itemFeature}>Includes access to all Salam events.</Text>
+                </View>
                 <Pressable
                   style={({ pressed }) => [
-                    styles.checkoutButton,
-                    pressed && { opacity: 0.9 },
+                    styles.actionButton,
+                    pressed && styles.actionButtonPressed,
                   ]}
                   onPress={() => handleOpenURL(CHECKOUT_URLS.gold)}
                 >
-                  <Text style={styles.checkoutButtonText}>Checkout Link</Text>
+                  <Text style={styles.actionButtonText}>Checkout Link</Text>
                 </Pressable>
               </View>
 
               {/* Platinum Package */}
-              <View style={styles.packageCard}>
-                <Text style={styles.packageEmoji}>💎</Text>
-                <Text style={styles.packageName}>Salam Platinum Package — $660</Text>
-                <Text style={styles.packageDescription}>
-                  <Text style={styles.bold}>12 weekly 1-hour coaching sessions</Text> covering resume building, interview prep, LinkedIn optimization, offer negotiation, and application management.
-                </Text>
-                <Text style={styles.packageFeature}>Includes access to all Salam events.</Text>
-                <Text style={styles.packageValidity}>Valid for 3 months.</Text>
+              <View style={styles.itemCard}>
+                <View style={styles.itemTopRow}>
+                  <View style={styles.itemIconWrapper}>
+                    <Text style={styles.emoji}>💎</Text>
+                  </View>
+                  <View style={styles.itemDetails}>
+                    <Text style={styles.itemName}>Salam Platinum</Text>
+                    <Text style={styles.itemCategory}>Valid for 3 months</Text>
+                  </View>
+                  <View style={styles.itemPriceContainer}>
+                    <Text style={styles.itemPrice}>$660</Text>
+                  </View>
+                </View>
+                <View style={styles.itemBody}>
+                  <Text style={styles.itemDescription}>
+                    <Text style={styles.boldWhite}>12 weekly 1-hour coaching sessions</Text> covering resume building, interview prep, LinkedIn optimization, offer negotiation, and application management.
+                  </Text>
+                  <Text style={styles.itemFeature}>Includes access to all Salam events.</Text>
+                </View>
                 <Pressable
                   style={({ pressed }) => [
-                    styles.checkoutButton,
-                    pressed && { opacity: 0.9 },
+                    styles.actionButton,
+                    pressed && styles.actionButtonPressed,
                   ]}
                   onPress={() => handleOpenURL(CHECKOUT_URLS.platinum)}
                 >
-                  <Text style={styles.checkoutButtonText}>Checkout Link</Text>
+                  <Text style={styles.actionButtonText}>Checkout Link</Text>
                 </Pressable>
               </View>
             </View>
           )}
-        </Pressable>
+        </View>
 
         {/* One-Time Services Box */}
-        <Pressable
-          style={({ pressed }) => [
-            styles.mainBox,
-            expandedSection === "services" && styles.mainBoxExpanded,
-            pressed && { opacity: 0.9 },
-          ]}
-          onPress={() => toggleSection("services")}
-        >
-          <View style={styles.mainBoxHeader}>
-            <Text style={styles.mainBoxTitle}>One-Time Services</Text>
-            <Text style={styles.mainBoxIcon}>
-              {expandedSection === "services" ? "▼" : "▶"}
-            </Text>
-          </View>
+        <View style={styles.sectionContainer}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.sectionHeader,
+              pressed && { opacity: 0.8 },
+            ]}
+            onPress={() => toggleSection("services")}
+          >
+            <Text style={styles.sectionTitle}>One-Time Services</Text>
+            <View style={styles.toggleIconContainer}>
+              <Text style={styles.toggleIcon}>
+                {expandedSection === "services" ? "▼" : "▶"}
+              </Text>
+            </View>
+          </Pressable>
+          
           {expandedSection === "services" && (
             <View style={styles.expandedContent}>
               {/* Interview Prep */}
-              <View style={styles.serviceCard}>
-                <Text style={styles.serviceEmoji}>🎤</Text>
-                <Text style={styles.serviceName}>Interview Prep — $45</Text>
-                <Text style={styles.serviceDescription}>
-                  45-minute mock interview + instant feedback.
-                </Text>
-                <Text style={styles.serviceIncludesTitle}>Includes:</Text>
-                <View style={styles.serviceIncludesList}>
-                  <Text style={styles.serviceIncludesItem}>• Salam Consulting Interview Packet</Text>
-                  <Text style={styles.serviceIncludesItem}>• Retrospective call after interview</Text>
-                  <Text style={styles.serviceIncludesItem}>• Next-step recommendations & negotiation tactics</Text>
+              <View style={styles.itemCard}>
+                <View style={styles.itemTopRow}>
+                  <View style={styles.itemIconWrapper}>
+                    <Text style={styles.emoji}>🎤</Text>
+                  </View>
+                  <View style={styles.itemDetails}>
+                    <Text style={styles.itemName}>Interview Prep</Text>
+                  </View>
+                  <View style={styles.itemPriceContainer}>
+                    <Text style={styles.itemPrice}>$45</Text>
+                  </View>
+                </View>
+                <View style={styles.itemBody}>
+                  <Text style={styles.itemDescription}>
+                    45-minute mock interview + instant feedback.
+                  </Text>
+                  <Text style={styles.includesTitle}>Includes:</Text>
+                  <View style={styles.includesList}>
+                    <Text style={styles.includesItem}>• Salam Consulting Interview Packet</Text>
+                    <Text style={styles.includesItem}>• Retrospective call after interview</Text>
+                    <Text style={styles.includesItem}>• Next-step recommendations & negotiation tactics</Text>
+                  </View>
                 </View>
                 <Pressable
                   style={({ pressed }) => [
-                    styles.bookButton,
-                    pressed && { opacity: 0.9 },
+                    styles.actionButton,
+                    pressed && styles.actionButtonPressed,
                   ]}
                   onPress={() => handleOpenURL(CHECKOUT_URLS.interviewPrep)}
                 >
-                  <Text style={styles.bookButtonText}>Book Now</Text>
+                  <Text style={styles.actionButtonText}>Book Now</Text>
                 </Pressable>
               </View>
+
               {/* Resume Building */}
-              <View style={styles.serviceCard}>
-                <Text style={styles.serviceEmoji}>✍️</Text>
-                <Text style={styles.serviceName}>Resume Building — $100</Text>
-                <Text style={styles.serviceDescription}>
-                  Professional, ATS-friendly resume update with personalization.
-                </Text>
-                <Text style={styles.serviceIncludesTitle}>Includes:</Text>
-                <View style={styles.serviceIncludesList}>
-                  <Text style={styles.serviceIncludesItem}>• One year of free edits</Text>
-                  <Text style={styles.serviceIncludesItem}>• Job posting recommendations</Text>
-                  <Text style={styles.serviceIncludesItem}>• LinkedIn optimization (headline + About section)</Text>
+              <View style={styles.itemCard}>
+                <View style={styles.itemTopRow}>
+                  <View style={styles.itemIconWrapper}>
+                    <Text style={styles.emoji}>✍️</Text>
+                  </View>
+                  <View style={styles.itemDetails}>
+                    <Text style={styles.itemName}>Resume Building</Text>
+                  </View>
+                  <View style={styles.itemPriceContainer}>
+                    <Text style={styles.itemPrice}>$100</Text>
+                  </View>
+                </View>
+                <View style={styles.itemBody}>
+                  <Text style={styles.itemDescription}>
+                    Professional, ATS-friendly resume update with personalization.
+                  </Text>
+                  <Text style={styles.includesTitle}>Includes:</Text>
+                  <View style={styles.includesList}>
+                    <Text style={styles.includesItem}>• One year of free edits</Text>
+                    <Text style={styles.includesItem}>• Job posting recommendations</Text>
+                    <Text style={styles.includesItem}>• LinkedIn optimization (headline + About section)</Text>
+                  </View>
                 </View>
                 <Pressable
                   style={({ pressed }) => [
-                    styles.bookButton,
-                    pressed && { opacity: 0.9 },
+                    styles.actionButton,
+                    pressed && styles.actionButtonPressed,
                   ]}
                   onPress={() => handleOpenURL(CHECKOUT_URLS.resumeBuilding)}
                 >
-                  <Text style={styles.bookButtonText}>Book Now</Text>
+                  <Text style={styles.actionButtonText}>Book Now</Text>
                 </Pressable>
               </View>
 
               {/* Career Coaching */}
-              <View style={styles.serviceCard}>
-                <Text style={styles.serviceEmoji}>🎯</Text>
-                <Text style={styles.serviceName}>Career Coaching — $100</Text>
-                <Text style={styles.serviceDescription}>
-                  1-hour session for career guidance, business building, resume help, interview improvement, or development management.
-                </Text>
-                <Text style={styles.serviceIncludesTitle}>Includes:</Text>
-                <Text style={styles.serviceIncludesItem}>
-                  Offline support for resources, application references, and guidance.
-                </Text>
+              <View style={styles.itemCard}>
+                <View style={styles.itemTopRow}>
+                  <View style={styles.itemIconWrapper}>
+                    <Text style={styles.emoji}>🎯</Text>
+                  </View>
+                  <View style={styles.itemDetails}>
+                    <Text style={styles.itemName}>Career Coaching</Text>
+                  </View>
+                  <View style={styles.itemPriceContainer}>
+                    <Text style={styles.itemPrice}>$100</Text>
+                  </View>
+                </View>
+                <View style={styles.itemBody}>
+                  <Text style={styles.itemDescription}>
+                    1-hour session for career guidance, business building, resume help, interview improvement, or development management.
+                  </Text>
+                  <Text style={styles.includesTitle}>Includes:</Text>
+                  <View style={styles.includesList}>
+                    <Text style={styles.includesItem}>• Offline support for resources, application references, and guidance.</Text>
+                  </View>
+                </View>
                 <Pressable
                   style={({ pressed }) => [
-                    styles.bookButton,
-                    pressed && { opacity: 0.9 },
+                    styles.actionButton,
+                    pressed && styles.actionButtonPressed,
                   ]}
                   onPress={() => handleOpenURL(CHECKOUT_URLS.careerCoaching)}
                 >
-                  <Text style={styles.bookButtonText}>Book Now</Text>
+                  <Text style={styles.actionButtonText}>Book Now</Text>
                 </Pressable>
               </View>
             </View>
           )}
-        </Pressable>
+        </View>
       </ScrollView>
     </View>
   );
@@ -222,22 +295,30 @@ export default function Services() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#08090d",
+    backgroundColor: "#02111E", // Dark app background matching the image
   },
   scrollContent: {
-    paddingHorizontal: 18,
-    paddingTop: 24,
-    paddingBottom: 32,
+    paddingHorizontal: 20,
+    paddingTop: 30,
+    paddingBottom: 40,
     gap: 20,
   },
   header: {
-    gap: 8,
-    marginBottom: 8,
+    gap: 12,
+    marginBottom: 10,
   },
   titleRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#112638",
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
     fontSize: 28,
@@ -246,32 +327,34 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 15,
-    color: "#b0c7c0",
+    color: "#738A9D", // Muted blue-grey for secondary text
     lineHeight: 22,
   },
-  mainBox: {
-    backgroundColor: "#11141b",
-    borderRadius: 16,
+  sectionContainer: {
+    backgroundColor: "#112638", // Operations container background
+    borderRadius: 24,
     padding: 20,
-    borderWidth: 2,
-    borderColor: "rgba(63, 225, 195, 0.3)",
-    overflow: "hidden",
   },
-  mainBoxExpanded: {
-    borderColor: "#3fe1c3",
-  },
-  mainBoxHeader: {
+  sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  mainBoxTitle: {
-    fontSize: 22,
-    color: "white",
-    fontWeight: "700",
-  },
-  mainBoxIcon: {
+  sectionTitle: {
     fontSize: 18,
+    color: "white",
+    fontWeight: "600",
+  },
+  toggleIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#1C3C54", // Inner accent background
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  toggleIcon: {
+    fontSize: 14,
     color: "#3fe1c3",
     fontWeight: "700",
   },
@@ -279,100 +362,94 @@ const styles = StyleSheet.create({
     marginTop: 20,
     gap: 16,
   },
-  packageCard: {
-    backgroundColor: "#08090d",
-    borderRadius: 14,
+  itemCard: {
+    backgroundColor: "#133E59", // Inner card background
+    borderRadius: 20,
     padding: 18,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-    gap: 12,
+    gap: 16,
   },
-  packageEmoji: {
-    fontSize: 32,
-    marginBottom: 4,
+  itemTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
-  packageName: {
-    fontSize: 20,
+  itemIconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#254D6B",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+  },
+  emoji: {
+    fontSize: 22,
+  },
+  itemDetails: {
+    flex: 1,
+    gap: 4,
+  },
+  itemName: {
+    fontSize: 16,
     color: "white",
-    fontWeight: "700",
-  },
-  packageDescription: {
-    fontSize: 15,
-    color: "#d7e0de",
-    lineHeight: 22,
-  },
-  bold: {
     fontWeight: "600",
   },
-  packageFeature: {
-    fontSize: 14,
-    color: "#b0c7c0",
-    marginTop: 4,
+  itemCategory: {
+    fontSize: 13,
+    color: "#738A9D",
   },
-  packageValidity: {
-    fontSize: 14,
-    color: "#b0c7c0",
+  itemPriceContainer: {
+    alignItems: "flex-end",
   },
-  checkoutButton: {
-    backgroundColor: "#3fe1c3",
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  checkoutButtonText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#08090d",
-  },
-  serviceCard: {
-    backgroundColor: "#08090d",
-    borderRadius: 14,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-    gap: 12,
-  },
-  serviceEmoji: {
-    fontSize: 32,
-    marginBottom: 4,
-  },
-  serviceName: {
-    fontSize: 20,
+  itemPrice: {
+    fontSize: 18,
     color: "white",
     fontWeight: "700",
   },
-  serviceDescription: {
-    fontSize: 15,
-    color: "#d7e0de",
+  itemBody: {
+    gap: 4,
+  },
+  itemDescription: {
+    fontSize: 14,
+    color: "#8FA8BB",
     lineHeight: 22,
   },
-  serviceIncludesTitle: {
-    fontSize: 15,
+  boldWhite: {
+    color: "white",
+    fontWeight: "600",
+  },
+  itemFeature: {
+    fontSize: 13,
+    color: "#738A9D",
+    marginTop: 4,
+  },
+  includesTitle: {
+    fontSize: 14,
     color: "#3fe1c3",
     fontWeight: "600",
-    marginTop: 4,
+    marginTop: 8,
+    marginBottom: 2,
   },
-  serviceIncludesList: {
-    gap: 6,
-    marginTop: 4,
+  includesList: {
+    gap: 4,
   },
-  serviceIncludesItem: {
-    fontSize: 14,
-    color: "#b0c7c0",
+  includesItem: {
+    fontSize: 13,
+    color: "#8FA8BB",
     lineHeight: 20,
   },
-  bookButton: {
-    borderColor: "#3fe1c3",
-    borderWidth: 1,
+  actionButton: {
+    backgroundColor: "#254D6B", // Sleek button matching theme
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 4,
   },
-  bookButtonText: {
-    fontSize: 16,
-    fontWeight: "700",
+  actionButtonPressed: {
+    backgroundColor: "#1C3C54",
+  },
+  actionButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
     color: "#3fe1c3",
   },
 });

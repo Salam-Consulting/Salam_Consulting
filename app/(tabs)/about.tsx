@@ -1,24 +1,53 @@
+import { Ionicons } from "@expo/vector-icons";
+import { Stack } from "expo-router"; // Added this to control the hidden header
 import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function About() {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.wrapper}>
+    <>
+      {/* This violently kills the hidden blank background layout from the parent router */}
+      <Stack.Screen options={{ headerShown: false }} />
+      
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          // Start exactly at the notch and pad the bottom
+          { paddingTop: insets.top, paddingBottom: insets.bottom + 40 }
+        ]}
         bounces={false}
         overScrollMode="never"
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="never"
       >
-        <View style={styles.contentCard}>
-          <Image
-            source={require('../../assets/images/Picture.png')}
-            style={styles.image}
-            resizeMode="contain"
-          />
+        {/* Standardized App Header */}
+        <View style={styles.header}>
+          <View style={styles.titleRow}>
+            <View style={styles.titleContainer}>
+              <View style={styles.iconContainer}>
+                <Ionicons name="information-circle" size={22} color="#3fe1c3" />
+              </View>
+              <Text style={styles.headerTitle}>About Us</Text>
+            </View>
+          </View>
+          <Text style={styles.subtitle}>
+            Learn more about our mission and founder
+          </Text>
+        </View>
 
-          <Text style={styles.title}>About Salam Consulting</Text>
+        <View style={styles.contentCard}>
+          <View style={styles.imageWrapper}>
+            <Image
+              source={require('../../assets/images/Picture.png')}
+              style={styles.image}
+              resizeMode="cover"
+            />
+          </View>
+
+          <Text style={styles.title}>Salam Consulting</Text>
 
           <Text style={styles.body}>
             Hi! I am Shahamat Chowdhury, founder of Salam Consulting.
@@ -52,47 +81,77 @@ export default function About() {
           </Text>
         </View>
       </ScrollView>
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-    backgroundColor: "#08090d",
-  },
   scrollView: {
     flex: 1,
-    backgroundColor: "#08090d",
+    backgroundColor: "#02111E", // Moved background color directly to the scroll view
   },
   scrollContent: {
-    padding: 18,
-    paddingBottom: 40,
+    paddingHorizontal: 20,
+    gap: 20,
+  },
+  header: {
+    gap: 12,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  titleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#112638",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    fontSize: 28,
+    color: "white",
+    fontWeight: "700",
+  },
+  subtitle: {
+    fontSize: 15,
+    color: "#738A9D",
+    lineHeight: 22,
   },
   contentCard: {
-    backgroundColor: "#11141b",
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 2,
-    borderColor: "rgba(63, 225, 195, 0.3)",
+    backgroundColor: "#112638",
+    borderRadius: 24,
+    padding: 24,
+  },
+  imageWrapper: {
+    alignItems: "center",
+    marginBottom: 24,
   },
   image: {
-    width: 300,
+    width: 200, 
     height: 300,
-    borderRadius: 20,
-    marginBottom: 20,
-
+    borderRadius: 30,
+    backgroundColor: "#1C3C54", 
   },
   title: {
-    fontSize: 26,
+    fontSize: 22,
     color: "white",
     fontWeight: "700",
     marginBottom: 16,
+    textAlign: "center",
   },
   body: {
-    fontSize: 16,
-    color: "#d0e7df",
+    fontSize: 15,
+    color: "#8FA8BB", 
     lineHeight: 24,
-    marginBottom: 14,
+    marginBottom: 16,
   },
 });

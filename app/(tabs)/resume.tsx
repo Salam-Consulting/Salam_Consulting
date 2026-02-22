@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import * as DocumentPicker from "expo-document-picker";
 import * as Print from "expo-print";
+import { Stack } from "expo-router";
 import * as Sharing from "expo-sharing";
 import * as WebBrowser from "expo-web-browser";
 import {
@@ -33,7 +34,7 @@ import {
   Text,
   View
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { auth, db, storage } from "@/lib/firebase";
 import {
@@ -54,6 +55,7 @@ type ResumeData = {
 };
 
 export default function ResumeScreen() {
+  const insets = useSafeAreaInsets();
   const [resumes, setResumes] = useState<ResumeData[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -396,13 +398,28 @@ export default function ResumeScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        // We move the styles.safe styles directly to the ScrollView
+        style={{ flex: 1, backgroundColor: "#02111E" }} 
+        contentContainerStyle={[
+          styles.scrollContent,
+          // Handle both top and bottom safe padding inside the ScrollView
+          { paddingTop: insets.top, paddingBottom: insets.bottom + 40 } 
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Your Resume</Text>
+          <View style={styles.titleRow}>
+            <View style={styles.titleContainer}>
+              <View style={styles.iconContainer}>
+                <Ionicons name="document-text" size={22} color="#3fe1c3" />
+              </View>
+              <Text style={styles.title}>Your Resume</Text>
+            </View>
+          </View>
           <Text style={styles.subtitle}>
             Upload your resume to apply for jobs faster
           </Text>
@@ -440,7 +457,7 @@ export default function ResumeScreen() {
                 <View style={styles.uploadIconContainer}>
                   <Ionicons
                     name="cloud-upload-outline"
-                    size={48}
+                    size={36}
                     color="#3fe1c3"
                   />
                 </View>
@@ -455,7 +472,10 @@ export default function ResumeScreen() {
             <View style={styles.cardHeader}>
               <Text style={styles.cardLabel}>Latest Resume</Text>
               {resumes.length > 1 && (
-                <Pressable onPress={() => setShowAllResumes(true)}>
+                <Pressable
+                  style={({ pressed }) => [pressed && styles.viewAllLinkPressed]}
+                  onPress={() => setShowAllResumes(true)}
+                >
                   <Text style={styles.viewAllLink}>
                     View All ({resumes.length})
                   </Text>
@@ -466,7 +486,7 @@ export default function ResumeScreen() {
             <View style={styles.fileIconContainer}>
               <Ionicons
                 name={getFileIcon(latestResume.mimeType) as any}
-                size={40}
+                size={32}
                 color="#3fe1c3"
               />
             </View>
@@ -484,52 +504,67 @@ export default function ResumeScreen() {
 
             <View style={styles.actionButtons}>
               <Pressable
-                style={styles.viewButton}
+                style={({ pressed }) => [
+                  styles.viewButton,
+                  pressed && !loading && styles.actionButtonPressed,
+                ]}
                 onPress={() => viewResume(latestResume.url)}
                 disabled={loading}
               >
-                <Ionicons name="eye-outline" size={20} color="#3fe1c3" />
+                <Ionicons name="eye-outline" size={20} color="white" />
                 <Text style={styles.viewButtonText}>View</Text>
               </Pressable>
 
               <Pressable
-                style={styles.downloadButton}
+                style={({ pressed }) => [
+                  styles.downloadButton,
+                  pressed && !loading && styles.actionButtonPressed,
+                ]}
                 onPress={() => downloadResume(latestResume)}
                 disabled={loading}
               >
-                <Ionicons name="download-outline" size={20} color="#3fe1c3" />
+                <Ionicons name="download-outline" size={20} color="white" />
                 <Text style={styles.downloadButtonText}>Download</Text>
               </Pressable>
 
               <Pressable
-                style={styles.deleteButton}
+                style={({ pressed }) => [
+                  styles.deleteButton,
+                  pressed && !loading && styles.actionButtonPressed,
+                ]}
                 onPress={() => deleteResume(latestResume)}
                 disabled={loading}
               >
-                <Ionicons name="trash-outline" size={20} color="#ff6b6b" />
+                <Ionicons name="trash-outline" size={20} color="#FF453A" />
               </Pressable>
             </View>
 
             <Pressable
-              style={styles.formatButton}
+              style={({ pressed }) => [
+                styles.formatButton,
+                pressed && !formatting && styles.formatButtonPressed,
+              ]}
               onPress={() => formatResume(latestResume)}
               disabled={loading || formatting}
             >
               {formatting ? (
                 <>
-                  <ActivityIndicator size="small" color="white" />
+                  <ActivityIndicator size="small" color="#3fe1c3" />
                   <Text style={styles.formatButtonText}>Formatting...</Text>
                 </>
               ) : (
                 <>
-                  <Ionicons name="document-text-outline" size={20} color="white" />
+                  <Ionicons name="document-text-outline" size={20} color="#3fe1c3" />
                   <Text style={styles.formatButtonText}>Format to Template</Text>
                 </>
               )}
             </Pressable>
 
             <Pressable
-              style={styles.uploadNewButtonFull}
+              style={({ pressed }) => [
+                styles.uploadNewButtonFull,
+                pressed && !loading && !uploading && styles.uploadNewButtonPressed,
+              ]}
               onPress={pickAndUploadDocument}
               disabled={loading || uploading}
             >
@@ -551,14 +586,17 @@ export default function ResumeScreen() {
         {/* View All Resumes Button */}
         {resumes.length >= 1 && (
           <Pressable
-            style={styles.viewAllButton}
+            style={({ pressed }) => [
+              styles.viewAllButton,
+              pressed && styles.viewAllButtonPressed,
+            ]}
             onPress={() => setShowAllResumes(true)}
           >
             <Ionicons name="folder-open-outline" size={20} color="#3fe1c3" />
             <Text style={styles.viewAllButtonText}>
               View All Resumes ({resumes.length})
             </Text>
-            <Ionicons name="chevron-forward" size={20} color="#3fe1c3" />
+            <Ionicons name="chevron-forward" size={20} color="#738A9D" />
           </Pressable>
         )}
 
@@ -582,7 +620,7 @@ export default function ResumeScreen() {
           <Text style={styles.tipsTitle}>Resume Tips</Text>
           <View style={styles.tipItem}>
             <Ionicons name="checkmark-circle" size={18} color="#3fe1c3" />
-            <Text style={styles.tipText}>Keep it to 1-2 pages</Text>
+            <Text style={styles.tipText}>Keep it to 1 page</Text>
           </View>
           <View style={styles.tipItem}>
             <Ionicons name="checkmark-circle" size={18} color="#3fe1c3" />
@@ -656,14 +694,17 @@ export default function ResumeScreen() {
                     style={styles.listDeleteButton}
                     onPress={() => deleteResume(resume)}
                   >
-                    <Ionicons name="trash-outline" size={20} color="#ff6b6b" />
+                    <Ionicons name="trash-outline" size={20} color="#FF453A" />
                   </Pressable>
                 </View>
               </View>
             ))}
 
             <Pressable
-              style={styles.addMoreButton}
+              style={({ pressed }) => [
+                styles.addMoreButton,
+                pressed && styles.addMoreButtonPressed,
+              ]}
               onPress={() => {
                 setShowAllResumes(false);
                 pickAndUploadDocument();
@@ -676,8 +717,8 @@ export default function ResumeScreen() {
         </SafeAreaView>
       </Modal>
 
-       {/* Formatted Resume Modal */}
-       <Modal
+      {/* Formatted Resume Modal */}
+      <Modal
         visible={showFormattedResume}
         animationType="slide"
         presentationStyle="pageSheet"
@@ -685,15 +726,37 @@ export default function ResumeScreen() {
       >
         <SafeAreaView style={styles.modalSafe}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Formatted Resume</Text>
+            <View style={styles.modalHeaderRow}>
+              <Text style={styles.modalTitle}>Formatted Resume</Text>
+              <Pressable
+                style={styles.closeButton}
+                onPress={() => setShowFormattedResume(false)}
+              >
+                <Ionicons name="close" size={24} color="white" />
+              </Pressable>
+            </View>
             <Pressable
-              style={styles.closeButton}
-              onPress={() => setShowFormattedResume(false)}
+              style={({ pressed }) => [
+                styles.saveWordHeaderButton,
+                pressed && styles.saveWordHeaderButtonPressed,
+              ]}
+              onPress={async () => {
+                try {
+                  if (!parsedResume) throw new Error("No resume data to export");
+                  await saveResumeAsDocx(parsedResume);
+                } catch (error) {
+                  console.error("Error saving Word document:", error);
+                  Alert.alert(
+                    "Export Failed",
+                    error instanceof Error ? error.message : "Could not save document."
+                  );
+                }
+              }}
             >
-              <Ionicons name="close" size={24} color="white" />
+              <Ionicons name="document-text-outline" size={18} color="#3fe1c3" />
+              <Text style={styles.saveWordHeaderButtonText}>Save as Word</Text>
             </Pressable>
           </View>
-
 
           <ScrollView
             contentContainerStyle={styles.modalContent}
@@ -701,12 +764,10 @@ export default function ResumeScreen() {
           >
             <View style={styles.resumeSheet}>
 
-
               {/* Name */}
               {parsedResume?.name ? (
                 <Text style={styles.resumeName}>{parsedResume.name}</Text>
               ) : null}
-
 
               {/* Contact line */}
               {parsedResume && (
@@ -724,9 +785,7 @@ export default function ResumeScreen() {
                 </Text>
               )}
 
-
               <View style={styles.resumeDivider} />
-
 
               {/* Education */}
               {parsedResume?.education && parsedResume.education.length > 0 && (
@@ -752,7 +811,6 @@ export default function ResumeScreen() {
                 </View>
               )}
 
-
               {/* Technical Skills */}
               {parsedResume?.skills ? (
                 <View style={styles.resumeSection}>
@@ -761,7 +819,6 @@ export default function ResumeScreen() {
                   <Text style={styles.resumeBodyText}>{parsedResume.skills}</Text>
                 </View>
               ) : null}
-
 
               {/* Professional Experience */}
               {parsedResume?.experience && parsedResume.experience.length > 0 && (
@@ -791,7 +848,6 @@ export default function ResumeScreen() {
                 </View>
               )}
 
-
               {/* Technical Projects */}
               {parsedResume?.projects && parsedResume.projects.length > 0 && (
                 <View style={styles.resumeSection}>
@@ -818,9 +874,7 @@ export default function ResumeScreen() {
                 </View>
               )}
 
-
             </View>
-
 
             <View style={styles.formattedActions}>
               <Pressable
@@ -846,20 +900,18 @@ export default function ResumeScreen() {
               </Pressable>
             </View>
 
-
           </ScrollView>
         </SafeAreaView>
       </Modal>
-    </SafeAreaView>
+    </>
   );
 }
-
 
 
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#08090d",
+    backgroundColor: "#02111E",
   },
   loadingContainer: {
     flex: 1,
@@ -867,42 +919,68 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   loadingText: {
-    color: "#a8b4b1",
+    color: "#738A9D",
     marginTop: 12,
     fontSize: 16,
   },
   scrollContent: {
-    padding: 20,
-    paddingBottom: 100,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    gap: 20,
   },
   header: {
-    marginBottom: 24,
+    gap: 12,
+    marginTop: -20,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  titleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#112638",
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
     fontSize: 28,
-    fontWeight: "700",
     color: "white",
-    marginBottom: 8,
+    fontWeight: "700",
   },
   subtitle: {
-    fontSize: 16,
-    color: "#a8b4b1",
+    fontSize: 15,
+    color: "#738A9D",
+    lineHeight: 22,
   },
   uploadArea: {
-    backgroundColor: "rgba(63, 225, 195, 0.08)",
-    borderRadius: 16,
+    backgroundColor: "#112638",
+    borderRadius: 24,
     borderWidth: 2,
-    borderColor: "rgba(63, 225, 195, 0.3)",
+    borderColor: "#1C3C54",
     borderStyle: "dashed",
     padding: 40,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 20,
   },
   uploadAreaPressed: {
-    backgroundColor: "rgba(63, 225, 195, 0.15)",
+    backgroundColor: "#133E59",
   },
   uploadIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#1C3C54",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 16,
   },
   uploadTitle: {
@@ -913,15 +991,16 @@ const styles = StyleSheet.create({
   },
   uploadSubtitle: {
     fontSize: 14,
-    color: "#a8b4b1",
+    color: "#738A9D",
     marginBottom: 8,
   },
   uploadHint: {
     fontSize: 12,
-    color: "#6f7d83",
+    color: "#8FA8BB",
   },
   uploadingContainer: {
     alignItems: "center",
+    width: "100%",
   },
   uploadingText: {
     color: "#3fe1c3",
@@ -930,9 +1009,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   progressBar: {
-    width: "80%",
+    width: "100%",
     height: 6,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: "#1C3C54",
     borderRadius: 3,
     marginTop: 12,
     overflow: "hidden",
@@ -943,22 +1022,20 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   resumeCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderRadius: 16,
+    backgroundColor: "#112638",
+    borderRadius: 24,
     padding: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "rgba(63, 225, 195, 0.3)",
+    gap: 16,
   },
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
   },
   cardLabel: {
-    fontSize: 12,
-    color: "#6f7d83",
+    fontSize: 14,
+    color: "#8FA8BB",
+    fontWeight: "500",
     textTransform: "uppercase",
     letterSpacing: 1,
   },
@@ -967,19 +1044,20 @@ const styles = StyleSheet.create({
     color: "#3fe1c3",
     fontWeight: "600",
   },
+  viewAllLinkPressed: {
+    opacity: 0.7,
+  },
   fileIconContainer: {
     width: 64,
     height: 64,
-    borderRadius: 12,
-    backgroundColor: "rgba(63, 225, 195, 0.15)",
+    borderRadius: 20,
+    backgroundColor: "#1C3C54",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 16,
     alignSelf: "center",
   },
   fileInfo: {
     alignItems: "center",
-    marginBottom: 20,
   },
   fileName: {
     fontSize: 18,
@@ -990,94 +1068,102 @@ const styles = StyleSheet.create({
   },
   fileSize: {
     fontSize: 14,
-    color: "#a8b4b1",
+    color: "#738A9D",
     marginBottom: 4,
   },
   uploadDate: {
     fontSize: 12,
-    color: "#6f7d83",
+    color: "#8FA8BB",
   },
   actionButtons: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 12,
+    gap: 10,
   },
   viewButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "rgba(63, 225, 195, 0.15)",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(63, 225, 195, 0.3)",
-  },
-  viewButtonText: {
-    color: "#3fe1c3",
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  downloadButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "rgba(63, 225, 195, 0.15)",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(63, 225, 195, 0.3)",
-  },
-  downloadButtonText: {
-    color: "#3fe1c3",
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  uploadNewButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "#3fe1c3",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  uploadNewButtonFull: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    backgroundColor: "#3fe1c3",
+    backgroundColor: "#254D6B",
     paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginTop: 16,
+    borderRadius: 14,
   },
-  uploadNewButtonText: {
-    color: "#08090d",
+  viewButtonText: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  downloadButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "#254D6B",
+    paddingVertical: 12,
+    borderRadius: 14,
+  },
+  downloadButtonText: {
+    color: "white",
     fontWeight: "600",
     fontSize: 14,
   },
   deleteButton: {
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255, 107, 107, 0.15)",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255, 107, 107, 0.3)",
+    backgroundColor: "#254D6B",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+  },
+  actionButtonPressed: {
+    backgroundColor: "#1C3C54",
+  },
+  formatButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#254D6B", 
+    paddingVertical: 14,
+    borderRadius: 14,
+  },
+  formatButtonPressed: {
+    backgroundColor: "#1C3C54",
+  },
+  formatButtonText: {
+    color: "#3fe1c3",
+    fontWeight: "600",
+    fontSize: 15,
+  },
+  uploadNewButtonFull: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#254D6B",
+    paddingVertical: 14,
+    borderRadius: 14,
+  },
+  uploadNewButtonPressed: {
+    backgroundColor: "#1C3C54",
+  },
+  uploadNewButtonText: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: 15,
   },
   uploadingOverlay: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    marginTop: 16,
+    marginTop: 8,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.1)",
+    borderTopColor: "#1C3C54",
   },
   uploadingSmallText: {
     color: "#3fe1c3",
@@ -1087,84 +1173,106 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "rgba(63, 225, 195, 0.08)",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: "rgba(63, 225, 195, 0.2)",
+    backgroundColor: "#254D6B",
+    borderRadius: 24,
+    padding: 20,
+  },
+  viewAllButtonPressed: {
+    backgroundColor: "#1C3C54",
   },
   viewAllButtonText: {
     flex: 1,
-    color: "#3fe1c3",
+    color: "white",
     fontSize: 16,
     fontWeight: "600",
     marginLeft: 12,
   },
   formatsSection: {
-    marginBottom: 24,
+    backgroundColor: "#112638",
+    borderRadius: 24,
+    padding: 20,
+    gap: 16,
   },
   formatsTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "600",
     color: "white",
-    marginBottom: 12,
   },
   formatsList: {
     flexDirection: "row",
-    gap: 16,
+    gap: 12,
   },
   formatItem: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 8,
+    backgroundColor: "#1C3C54",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 14,
   },
   formatText: {
     fontSize: 14,
-    color: "#d7e0de",
+    color: "white",
   },
   tipsSection: {
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: "#112638",
+    borderRadius: 24,
+    padding: 20,
+    gap: 16,
   },
   tipsTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "600",
     color: "white",
-    marginBottom: 12,
   },
   tipItem: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    marginBottom: 10,
   },
   tipText: {
     fontSize: 14,
-    color: "#a8b4b1",
+    color: "#8FA8BB",
   },
-  // Modal styles
   modalSafe: {
     flex: 1,
-    backgroundColor: "#08090d",
+    backgroundColor: "#02111E",
   },
   modalHeader: {
+    padding: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#112638",
+    gap: 12,
+  },
+  modalHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.1)",
   },
   modalTitle: {
     fontSize: 24,
     fontWeight: "700",
     color: "white",
+  },
+  saveWordHeaderButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 6,
+    backgroundColor: "#254D6B",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+  },
+  saveWordHeaderButtonPressed: {
+    backgroundColor: "#1C3C54",
+  },
+  saveWordHeaderButtonText: {
+    color: "#3fe1c3",
+    fontWeight: "600",
+    fontSize: 13,
   },
   closeButton: {
     padding: 8,
@@ -1172,20 +1280,20 @@ const styles = StyleSheet.create({
   modalContent: {
     padding: 20,
     paddingBottom: 40,
+    gap: 12,
   },
   resumeListItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: 12,
+    backgroundColor: "#112638",
+    borderRadius: 20,
     padding: 16,
-    marginBottom: 12,
   },
   listItemIcon: {
     width: 48,
     height: 48,
-    borderRadius: 10,
-    backgroundColor: "rgba(63, 225, 195, 0.15)",
+    borderRadius: 14,
+    backgroundColor: "#1C3C54",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -1201,25 +1309,7 @@ const styles = StyleSheet.create({
   },
   listItemMeta: {
     fontSize: 13,
-    color: "#6f7d83",
-    marginBottom: 8,
-  },
-  formatSmallButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "rgba(63, 225, 195, 0.1)",
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "rgba(63, 225, 195, 0.3)",
-    alignSelf: "flex-start",
-  },
-  formatSmallText: {
-    fontSize: 12,
-    color: "#3fe1c3",
-    fontWeight: "600",
+    color: "#738A9D",
   },
   listItemActions: {
     flexDirection: "row",
@@ -1227,90 +1317,58 @@ const styles = StyleSheet.create({
   },
   listActionButton: {
     padding: 10,
-    backgroundColor: "rgba(63, 225, 195, 0.15)",
-    borderRadius: 8,
+    backgroundColor: "#1C3C54",
+    borderRadius: 12,
   },
   listDeleteButton: {
     padding: 10,
-    backgroundColor: "rgba(255, 107, 107, 0.15)",
-    borderRadius: 8,
+    backgroundColor: "rgba(255, 69, 58, 0.1)",
+    borderRadius: 12,
   },
   addMoreButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    backgroundColor: "rgba(63, 225, 195, 0.08)",
-    borderRadius: 12,
+    backgroundColor: "#112638",
+    borderRadius: 20,
     padding: 20,
     marginTop: 8,
-    borderWidth: 2,
-    borderColor: "rgba(63, 225, 195, 0.2)",
-    borderStyle: "dashed",
+  },
+  addMoreButtonPressed: {
+    backgroundColor: "#0F2838",
   },
   addMoreText: {
     fontSize: 16,
     fontWeight: "600",
     color: "#3fe1c3",
   },
-  formatButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#3fe1c3",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginTop: 16,
-  },
-  formatButtonText: {
-    color: "white",
-    fontWeight: "600",
-    fontSize: 15,
-  },
-  formattedContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "rgba(63, 225, 195, 0.2)",
-  },
-  formattedTextInput: {
-    color: "white",
-    fontSize: 13,
-    fontFamily: "monospace",
-    minHeight: 400,
-    lineHeight: 20,
-  },
   formattedActions: {
     flexDirection: "row",
+    justifyContent: "center",
     gap: 12,
-    marginBottom: 12,
   },
   savePdfButton: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#3fe1c3",
+    backgroundColor: "#254D6B",
     paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingHorizontal: 20,
+    borderRadius: 14,
   },
   savePdfButtonPressed: {
-    opacity: 0.85,
+    backgroundColor: "#1C3C54",
   },
   savePdfButtonText: {
-    color: "white",
+    color: "#3fe1c3",
     fontWeight: "600",
     fontSize: 15,
   },
   resumeSheet: {
     backgroundColor: "white",
-    borderRadius: 10,
+    borderRadius: 20,
     padding: 20,
     borderWidth: 1,
     borderColor: "#e5e7eb",

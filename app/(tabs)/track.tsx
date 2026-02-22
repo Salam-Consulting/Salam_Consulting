@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, Stack } from "expo-router";
 import { openBrowserAsync, WebBrowserPresentationStyle } from "expo-web-browser";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -6,10 +6,12 @@ import {
   Alert,
   FlatList,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useAuth } from "@/contexts/auth";
@@ -21,6 +23,7 @@ import {
   type TrackedJob,
 } from "@/lib/jobTracking";
 import Entypo from "@expo/vector-icons/Entypo";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 type FilterType = "all" | JobApplicationStatus;
 
@@ -186,6 +189,7 @@ function EmptyState({ filter }: { filter: FilterType }) {
 }
 
 export default function TrackScreen() {
+  const insets = useSafeAreaInsets();
   const { isAuthenticated } = useAuth();
   const [selectedFilter, setSelectedFilter] = useState<FilterType>("all");
   const [jobs, setJobs] = useState<TrackedJob[]>([]);
@@ -272,194 +276,191 @@ export default function TrackScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.backButton,
-              pressed && { opacity: 0.7 },
-            ]}
-            onPress={() => router.push("/(tabs)/jobs")}
-          >
-            <Entypo name="chevron-left" size={24} color="#3fe1c3" />
-          </Pressable>
-          <IconSymbol name="list.bullet" size={32} color="#3fe1c3" />
-          <View style={styles.headerText}>
-            <Text style={styles.headerTitle}>My Tracked Jobs</Text>
-            <Text style={styles.headerSubtitle}>
-              Manage your job applications
-            </Text>
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={[styles.container]}>
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.backButton,
+                pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
+              ]}
+              onPress={() => router.push("/(tabs)/jobs")}
+            >
+              <Ionicons name="chevron-back" size={28} color="white" />  
+            </Pressable>
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.headerTitle}>Tracked Jobs</Text>
+              <Text style={styles.headerSubtitle}>
+                Manage your job applications
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      <View style={styles.filters}>
-        {FILTER_OPTIONS.map((option) => {
-          const isActive = selectedFilter === option.value;
-          const count = filterCounts[option.value] || 0;
-          
-          return (
-            <Pressable
-              key={option.value}
-              style={[styles.filterButton, isActive && styles.filterButtonActive]}
-              onPress={() => setSelectedFilter(option.value)}
-            >
-              <View style={styles.filterButtonContent}>
-                <IconSymbol
-                  name={option.icon as any}
-                  size={14}
-                  color={isActive ? "#08090d" : "#3fe1c3"}
-                />
-                <Text
-                  style={[
-                    styles.filterButtonText,
-                    isActive && styles.filterButtonTextActive,
+        <View style={styles.filtersContainer}>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filtersScrollContent}
+          >
+            {FILTER_OPTIONS.map((option) => {
+              const isActive = selectedFilter === option.value;
+              const count = filterCounts[option.value] || 0;
+              
+              return (
+                <Pressable
+                  key={option.value}
+                  style={({ pressed }) => [
+                    styles.filterButton,
+                    isActive && styles.filterButtonActive,
+                    pressed && { opacity: 0.8 }
                   ]}
-                  numberOfLines={1}
+                  onPress={() => setSelectedFilter(option.value)}
                 >
-                  {option.label}
-                </Text>
-              </View>
-              {count > 0 && (
-                <View style={[styles.filterBadge, isActive && styles.filterBadgeActive]}>
-                  <Text style={[styles.filterBadgeText, isActive && styles.filterBadgeTextActive]}>
-                    {count}
+                  <IconSymbol
+                    name={option.icon as any}
+                    size={14}
+                    color={isActive ? "#02111E" : "#738A9D"}
+                  />
+                  <Text
+                    style={[
+                      styles.filterButtonText,
+                      isActive && styles.filterButtonTextActive,
+                    ]}
+                  >
+                    {option.label}
                   </Text>
-                </View>
-              )}
-            </Pressable>
-          );
-        })}
+                  {count > 0 && (
+                    <View style={[styles.filterBadge, isActive && styles.filterBadgeActive]}>
+                      <Text style={[styles.filterBadgeText, isActive && styles.filterBadgeTextActive]}>
+                        {count}
+                      </Text>
+                    </View>
+                  )}
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {error && (
+          <View style={styles.errorBanner}>
+            <Ionicons name="warning" size={20} color="#FF453A" />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#3fe1c3" />
+            <Text style={styles.loadingText}>Loading your jobs...</Text>
+          </View>
+        ) : jobs.length === 0 ? (
+          <EmptyState filter={selectedFilter} />
+        ) : (
+          <FlatList
+            data={jobs}
+            keyExtractor={(item) => item.job_id}
+            renderItem={({ item }) => (
+              <JobCard job={item} onRemove={handleRemove} onView={handleViewJob} />
+            )}
+            contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 40 }]}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
       </View>
-
-      {error && (
-        <View style={styles.errorBanner}>
-          <Entypo name="warning" size={20} color="#ff7b7b" />
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
-      )}
-
-      {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3fe1c3" />
-          <Text style={styles.loadingText}>Loading your jobs...</Text>
-        </View>
-      ) : jobs.length === 0 ? (
-        <EmptyState filter={selectedFilter} />
-      ) : (
-        <FlatList
-          data={jobs}
-          keyExtractor={(item) => item.job_id}
-          renderItem={({ item }) => (
-            <JobCard job={item} onRemove={handleRemove} onView={handleViewJob} />
-          )}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#08090d",
+    backgroundColor: "#02111E", // App Dark Theme
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(63, 225, 195, 0.1)",
+    paddingTop: 12,
+    paddingBottom: 20,
   },
   headerContent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 16,
   },
   backButton: {
-    padding: 4,
-    marginLeft: -4,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#112638",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  headerText: {
+  headerTextContainer: {
     flex: 1,
   },
   headerTitle: {
-    fontSize: 26,
-    fontWeight: "700",
+    fontSize: 28,
+    fontWeight: "800",
     color: "white",
+    letterSpacing: 0.5,
   },
   headerSubtitle: {
-    fontSize: 14,
-    color: "#b0c7c0",
+    fontSize: 15,
+    color: "#738A9D",
     marginTop: 2,
+    fontWeight: "500",
   },
-  filters: {
-    flexDirection: "row",
-    paddingHorizontal: 12,
-    paddingVertical: 16,
-    gap: 6,
+  filtersContainer: {
+    marginBottom: 16,
+  },
+  filtersScrollContent: {
+    paddingHorizontal: 20,
+    gap: 10,
   },
   filterButton: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 3,
+    gap: 6,
     paddingVertical: 10,
-    paddingHorizontal: 4,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: "rgba(63, 225, 195, 0.3)",
-    backgroundColor: "transparent",
-    minWidth: 0,
-  },
-  filterButtonContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    flex: 1,
-    justifyContent: "center",
-    minWidth: 0,
-    flexShrink: 1,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: "#112638",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.05)",
   },
   filterButtonActive: {
     backgroundColor: "#3fe1c3",
     borderColor: "#3fe1c3",
   },
   filterButtonText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: "600",
-    color: "#3fe1c3",
-    flexShrink: 0,
+    color: "#738A9D",
   },
   filterButtonTextActive: {
-    color: "#08090d",
+    color: "#02111E",
+    fontWeight: "700",
   },
   filterBadge: {
-    backgroundColor: "rgba(63, 225, 195, 0.2)",
-    borderRadius: 8,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    minWidth: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    marginLeft: 2,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginLeft: 4,
   },
   filterBadgeActive: {
-    backgroundColor: "rgba(8, 9, 13, 0.3)",
+    backgroundColor: "rgba(2, 17, 30, 0.2)",
   },
   filterBadgeText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "700",
-    color: "#3fe1c3",
-    textAlign: "center",
+    color: "#8FA8BB",
   },
   filterBadgeTextActive: {
-    color: "#08090d",
+    color: "#02111E",
   },
   errorBanner: {
     flexDirection: "row",
@@ -467,51 +468,57 @@ const styles = StyleSheet.create({
     gap: 10,
     marginHorizontal: 20,
     marginBottom: 16,
-    padding: 12,
-    backgroundColor: "rgba(255, 123, 123, 0.1)",
-    borderRadius: 10,
+    padding: 14,
+    backgroundColor: "rgba(255, 69, 58, 0.1)",
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(255, 123, 123, 0.3)",
+    borderColor: "rgba(255, 69, 58, 0.2)",
   },
   errorText: {
     flex: 1,
     fontSize: 14,
-    color: "#ff7b7b",
+    fontWeight: "500",
+    color: "#FF453A",
   },
   loadingContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 12,
+    gap: 16,
   },
   loadingText: {
-    fontSize: 14,
-    color: "#b0c7c0",
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#738A9D",
   },
   listContent: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
     gap: 16,
   },
   jobCard: {
-    backgroundColor: "#11141b",
-    borderRadius: 16,
-    padding: 18,
+    backgroundColor: "#112638",
+    borderRadius: 24,
+    padding: 20,
     borderWidth: 1,
-    borderColor: "rgba(63, 225, 195, 0.2)",
+    borderColor: "rgba(63, 225, 195, 0.1)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 4,
   },
   jobCardHeader: {
-    marginBottom: 12,
+    marginBottom: 16,
   },
   jobCardTitleSection: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 12,
+    gap: 14,
   },
   statusBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 2,
@@ -523,11 +530,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     color: "white",
-    marginBottom: 4,
+    marginBottom: 6,
+    lineHeight: 24,
   },
   jobCardCompany: {
     fontSize: 15,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#3fe1c3",
   },
   jobCardInfoRow: {
@@ -538,13 +546,14 @@ const styles = StyleSheet.create({
   },
   jobCardInfoText: {
     fontSize: 14,
-    color: "#b0c7c0",
+    fontWeight: "500",
+    color: "#8FA8BB",
   },
   jobCardActions: {
     flexDirection: "row",
-    gap: 10,
-    marginTop: 12,
-    paddingTop: 12,
+    gap: 12,
+    marginTop: 16,
+    paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: "rgba(255, 255, 255, 0.05)",
   },
@@ -553,37 +562,33 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#3fe1c3",
-    backgroundColor: "transparent",
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: "#1C3C54",
   },
   viewButtonText: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#3fe1c3",
+    fontWeight: "700",
+    color: "white",
   },
   removeButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#ff7b7b",
-    backgroundColor: "transparent",
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+    backgroundColor: "rgba(255, 69, 58, 0.1)",
   },
   removeButtonDisabled: {
     opacity: 0.5,
   },
   removeButtonText: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#ff7b7b",
+    fontWeight: "700",
+    color: "#FF453A",
   },
   emptyState: {
     flex: 1,
@@ -592,20 +597,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyStateIcon: {
-    marginBottom: 20,
+    marginBottom: 24,
+    opacity: 0.8,
   },
   emptyStateTitle: {
-    fontSize: 22,
-    fontWeight: "700",
+    fontSize: 24,
+    fontWeight: "800",
     color: "white",
-    marginBottom: 8,
+    marginBottom: 12,
     textAlign: "center",
   },
   emptyStateMessage: {
     fontSize: 15,
-    color: "#b0c7c0",
+    color: "#738A9D",
     textAlign: "center",
-    lineHeight: 22,
+    lineHeight: 24,
+    fontWeight: "500",
   },
   authPrompt: {
     flex: 1,
@@ -615,16 +622,16 @@ const styles = StyleSheet.create({
   },
   authPromptTitle: {
     fontSize: 24,
-    fontWeight: "700",
+    fontWeight: "800",
     color: "white",
-    marginTop: 20,
-    marginBottom: 8,
+    marginTop: 24,
+    marginBottom: 12,
   },
   authPromptMessage: {
     fontSize: 16,
-    color: "#b0c7c0",
+    color: "#738A9D",
     textAlign: "center",
     lineHeight: 24,
+    fontWeight: "500",
   },
 });
-

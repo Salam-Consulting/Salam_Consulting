@@ -208,7 +208,6 @@ export default function Jobs() {
     const trimmedQuery = searchQuery.trim();
     const trimmedLocation = location.trim();
     
-    // Log the search query
     console.log("🔍 Job Search:", {
       query: trimmedQuery,
       location: trimmedLocation || "Not specified",
@@ -219,21 +218,17 @@ export default function Jobs() {
     setError(null);
     setJobs([]);
     
-    // Store the search query for display
     setLastSearchQuery(trimmedQuery);
     setLastSearchLocation(trimmedLocation);
     
     try {
       const fetchedJobs = await fetchJobs(trimmedQuery, trimmedLocation);
-      // Filter jobs to only show those posted in the past 24 hours
       const filteredJobs = filterJobsBy24Hours(fetchedJobs);
-      // Sort jobs by date posted (most recent first)
       const sortedJobs = sortJobsByDate(filteredJobs);
       setJobs(sortedJobs);
       
-      console.log(`✅ Found ${sortedJobs.length} jobs posted in the past 24 hours for "${trimmedQuery}${trimmedLocation ? ` in ${trimmedLocation}` : ""}"`);
+      console.log(`✅ Found ${sortedJobs.length} jobs posted in the past 24 hours`);
       
-      // Load job statuses if user is authenticated
       if (isAuthenticated && sortedJobs.length > 0) {
         const jobIds = sortedJobs.map((job) => job.job_id);
         const statuses = await getJobStatuses(jobIds);
@@ -291,18 +286,20 @@ export default function Jobs() {
         <View style={styles.header}>
           <View style={styles.titleRow}>
             <View style={styles.titleContainer}>
-              <IconSymbol name="text.document" size={26} color="#3fe1c3" />
+              <View style={styles.iconContainer}>
+                <IconSymbol name="text.document" size={22} color="#3fe1c3" />
+              </View>
               <Text style={styles.title}>Job Search</Text>
             </View>
             {isAuthenticated && (
               <Pressable
                 style={({ pressed }) => [
                   styles.viewAppliedButton,
-                  pressed && { opacity: 0.9 },
+                  pressed && { opacity: 0.8 },
                 ]}
                 onPress={() => router.push("/track")}
               >
-                <Entypo name="check" size={18} color="#3fe1c3" />
+                <Entypo name="check" size={16} color="white" />
                 <Text style={styles.viewAppliedButtonText}>Applied</Text>
               </Pressable>
             )}
@@ -313,7 +310,7 @@ export default function Jobs() {
         </View>
 
         {/* Search Section */}
-        <View style={styles.searchSection}>
+        <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Search Jobs</Text>
           
           <View style={styles.inputGroup}>
@@ -321,7 +318,7 @@ export default function Jobs() {
             <TextInput
               style={styles.input}
               placeholder="e.g., Software Engineer, Marketing Manager"
-              placeholderTextColor="#6f7d83"
+              placeholderTextColor="#738A9D"
               value={searchQuery}
               onChangeText={setSearchQuery}
               onSubmitEditing={handleSearch}
@@ -334,7 +331,7 @@ export default function Jobs() {
             <TextInput
               style={styles.input}
               placeholder="e.g., New York, Remote"
-              placeholderTextColor="#6f7d83"
+              placeholderTextColor="#738A9D"
               value={location}
               onChangeText={setLocation}
               onSubmitEditing={handleSearch}
@@ -344,19 +341,19 @@ export default function Jobs() {
 
           <Pressable
             style={({ pressed }) => [
-              styles.searchButton,
-              (!searchQuery.trim() || isSearching) && styles.searchButtonDisabled,
-              pressed && { opacity: 0.9 },
+              styles.actionButton,
+              (!searchQuery.trim() || isSearching) && styles.actionButtonDisabled,
+              pressed && styles.actionButtonPressed,
             ]}
             onPress={handleSearch}
             disabled={!searchQuery.trim() || isSearching}
           >
             {isSearching ? (
-              <ActivityIndicator color="#08090d" />
+              <ActivityIndicator color="#3fe1c3" />
             ) : (
               <>
-                <Entypo name="magnifying-glass" size={20} color="#08090d" />
-                <Text style={styles.searchButtonText}>Search Jobs</Text>
+                <Entypo name="magnifying-glass" size={20} color="#3fe1c3" />
+                <Text style={styles.actionButtonText}>Search Jobs</Text>
               </>
             )}
           </Pressable>
@@ -365,7 +362,7 @@ export default function Jobs() {
         {/* API Key Warning */}
         {!JSEARCH_API_KEY && (
           <View style={styles.warningContainer}>
-            <Entypo name="warning" size={20} color="#ffa500" />
+            <Entypo name="warning" size={20} color="#FF453A" />
             <View style={styles.warningTextContainer}>
               <Text style={styles.warningTitle}>API Key Not Configured</Text>
               <Text style={styles.warningText}>
@@ -378,7 +375,7 @@ export default function Jobs() {
         {/* Error Message */}
         {error && (
           <View style={styles.errorContainer}>
-            <Entypo name="circle-with-cross" size={20} color="#ff7b7b" />
+            <Entypo name="circle-with-cross" size={20} color="#EB001B" />
             <Text style={styles.errorText}>{error}</Text>
           </View>
         )}
@@ -392,7 +389,7 @@ export default function Jobs() {
               </Text>
               {lastSearchQuery && (
                 <View style={styles.searchInfoContainer}>
-                  <Entypo name="info" size={16} color="#b0c7c0" />
+                  <Entypo name="info-with-circle" size={16} color="#738A9D" />
                   <Text style={styles.searchInfoText}>
                     Showing results for: <Text style={styles.searchInfoHighlight}>{lastSearchQuery}</Text>
                     {lastSearchLocation && (
@@ -402,11 +399,14 @@ export default function Jobs() {
                 </View>
               )}
             </View>
+            
             {jobs.map((job) => (
-              <View key={job.job_id} style={styles.jobCard}>
+              <View key={job.job_id} style={styles.itemCard}>
                 <View style={styles.jobHeader}>
                   <View style={styles.jobTitleRow}>
-                    <Entypo name="briefcase" size={20} color="#3fe1c3" />
+                    <View style={styles.itemIconWrapper}>
+                      <Entypo name="briefcase" size={20} color="white" />
+                    </View>
                     <Text style={styles.jobTitle}>{job.job_title}</Text>
                   </View>
                   <Text style={styles.employerName}>{job.employer_name}</Text>
@@ -414,18 +414,18 @@ export default function Jobs() {
 
                 <View style={styles.jobDetails}>
                   <View style={styles.jobDetailRow}>
-                    <Entypo name="location" size={16} color="#b0c7c0" />
+                    <Entypo name="location" size={16} color="#738A9D" />
                     <Text style={styles.jobDetailText}>{formatLocation(job)}</Text>
                   </View>
                   {job.job_posted_at_datetime_utc && (
                     <View style={styles.jobDetailRow}>
-                      <Entypo name="calendar" size={16} color="#b0c7c0" />
+                      <Entypo name="calendar" size={16} color="#738A9D" />
                       <Text style={styles.jobDetailText}>{formatDatePosted(job.job_posted_at_datetime_utc)}</Text>
                     </View>
                   )}
                   {job.job_min_salary && job.job_max_salary && (
                     <View style={styles.jobDetailRow}>
-                      <Entypo name="wallet" size={16} color="#b0c7c0" />
+                      <Entypo name="wallet" size={16} color="#738A9D" />
                       <Text style={styles.jobDetailText}>{formatSalary(job)}</Text>
                     </View>
                   )}
@@ -442,7 +442,7 @@ export default function Jobs() {
                     <Pressable
                       style={({ pressed }) => [
                         styles.applyButton,
-                        pressed && { opacity: 0.9 },
+                        pressed && styles.applyButtonPressed,
                       ]}
                       onPress={() => handleApply(job)}
                     >
@@ -457,19 +457,19 @@ export default function Jobs() {
                           styles.statusButton,
                           jobStatuses[job.job_id] === "applied" && styles.statusButtonActive,
                           updatingStatus === job.job_id && styles.statusButtonDisabled,
-                          pressed && { opacity: 0.9 },
+                          pressed && { opacity: 0.8 },
                         ]}
                         onPress={() => handleStatusChange(job, "applied")}
                         disabled={updatingStatus === job.job_id}
                       >
                         {updatingStatus === job.job_id ? (
-                          <ActivityIndicator size="small" color={jobStatuses[job.job_id] === "applied" ? "#08090d" : "#3fe1c3"} />
+                          <ActivityIndicator size="small" color={jobStatuses[job.job_id] === "applied" ? "white" : "#738A9D"} />
                         ) : (
                           <>
                             <Entypo 
                               name="check" 
                               size={16} 
-                              color={jobStatuses[job.job_id] === "applied" ? "#08090d" : "#3fe1c3"} 
+                              color={jobStatuses[job.job_id] === "applied" ? "white" : "#738A9D"} 
                             />
                             <Text style={[
                               styles.statusButtonText,
@@ -486,19 +486,19 @@ export default function Jobs() {
                           styles.statusButton,
                           jobStatuses[job.job_id] === "not_applied" && styles.statusButtonActive,
                           updatingStatus === job.job_id && styles.statusButtonDisabled,
-                          pressed && { opacity: 0.9 },
+                          pressed && { opacity: 0.8 },
                         ]}
                         onPress={() => handleStatusChange(job, "not_applied")}
                         disabled={updatingStatus === job.job_id}
                       >
                         {updatingStatus === job.job_id ? (
-                          <ActivityIndicator size="small" color={jobStatuses[job.job_id] === "not_applied" ? "#08090d" : "#3fe1c3"} />
+                          <ActivityIndicator size="small" color={jobStatuses[job.job_id] === "not_applied" ? "white" : "#738A9D"} />
                         ) : (
                           <>
                             <Entypo 
                               name="cross" 
                               size={16} 
-                              color={jobStatuses[job.job_id] === "not_applied" ? "#08090d" : "#3fe1c3"} 
+                              color={jobStatuses[job.job_id] === "not_applied" ? "white" : "#738A9D"} 
                             />
                             <Text style={[
                               styles.statusButtonText,
@@ -519,19 +519,21 @@ export default function Jobs() {
 
         {/* Last Search Query */}
         {jobs.length === 0 && !isSearching && lastSearchQuery && (
-          <View style={styles.lastSearchSection}>
+          <View style={styles.sectionContainer}>
             <View style={styles.lastSearchHeader}>
-              <Entypo name="clock" size={20} color="#3fe1c3" />
+              <View style={styles.toggleIconContainer}>
+                <Entypo name="clock" size={16} color="#3fe1c3" />
+              </View>
               <Text style={styles.sectionTitle}>Last Search</Text>
             </View>
-            <View style={styles.lastSearchCard}>
+            <View style={[styles.itemCard, { marginTop: 16 }]}>
               <Text style={styles.lastSearchQuery}>
                 {lastSearchQuery}
                 {lastSearchLocation && (
                   <Text style={styles.lastSearchLocation}> in {lastSearchLocation}</Text>
                 )}
               </Text>
-              <Text style={styles.lastSearchMessage}>
+              <Text style={styles.itemDescription}>
                 No jobs posted in the past 24 hours found for this search.
               </Text>
             </View>
@@ -545,17 +547,17 @@ export default function Jobs() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#08090d",
+    backgroundColor: "#02111E", // Dark app background matching the image
   },
   scrollContent: {
-    paddingHorizontal: 18,
-    paddingTop: 24,
-    paddingBottom: 32,
-    gap: 24,
+    paddingHorizontal: 20,
+    paddingTop: 30,
+    paddingBottom: 40,
+    gap: 20,
   },
   header: {
-    gap: 8,
-    marginBottom: 8,
+    gap: 12,
+    marginBottom: 10,
   },
   titleRow: {
     flexDirection: "row",
@@ -568,21 +570,27 @@ const styles = StyleSheet.create({
     gap: 12,
     flex: 1,
   },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#112638",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   viewAppliedButton: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#3fe1c3",
-    backgroundColor: "transparent",
+    borderRadius: 16,
+    backgroundColor: "#1C3C54",
   },
   viewAppliedButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
-    color: "#3fe1c3",
+    color: "white",
   },
   title: {
     fontSize: 28,
@@ -591,113 +599,98 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 15,
-    color: "#b0c7c0",
+    color: "#738A9D", // Muted blue-grey for secondary text
     lineHeight: 22,
   },
-  searchSection: {
-    backgroundColor: "#11141b",
-    borderRadius: 16,
+  sectionContainer: {
+    backgroundColor: "#112638", // Operations container background
+    borderRadius: 24,
     padding: 20,
-    borderWidth: 1,
-    borderColor: "rgba(63, 225, 195, 0.3)",
     gap: 16,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 18,
     color: "white",
-    fontWeight: "700",
-    marginBottom: 4,
+    fontWeight: "600",
   },
   inputGroup: {
     gap: 8,
   },
   label: {
     fontSize: 14,
-    color: "#d7e0de",
+    color: "#8FA8BB",
     fontWeight: "500",
   },
   input: {
-    backgroundColor: "#08090d",
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    color: "white",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
-    fontSize: 16,
-  },
-  searchButton: {
-    backgroundColor: "#3fe1c3",
+    backgroundColor: "#1C3C54", // Inner accent background
+    borderRadius: 14,
+    paddingHorizontal: 16,
     paddingVertical: 14,
-    borderRadius: 12,
+    color: "white",
+    fontSize: 15,
+  },
+  actionButton: {
+    backgroundColor: "#254D6B", 
+    paddingVertical: 14,
+    borderRadius: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
     marginTop: 4,
   },
-  searchButtonDisabled: {
+  actionButtonDisabled: {
     opacity: 0.5,
   },
-  searchButtonText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#08090d",
+  actionButtonPressed: {
+    backgroundColor: "#1C3C54",
   },
-  lastSearchSection: {
-    gap: 12,
+  actionButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#3fe1c3",
   },
   lastSearchHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 12,
   },
-  lastSearchCard: {
-    backgroundColor: "#11141b",
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "rgba(63, 225, 195, 0.3)",
-    gap: 8,
+  toggleIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#1C3C54",
+    alignItems: "center",
+    justifyContent: "center",
   },
   lastSearchQuery: {
     fontSize: 16,
-    color: "#3fe1c3",
+    color: "white",
     fontWeight: "600",
   },
   lastSearchLocation: {
     fontSize: 16,
-    color: "#b0c7c0",
+    color: "#8FA8BB",
     fontWeight: "400",
   },
-  lastSearchMessage: {
-    fontSize: 14,
-    color: "#b0c7c0",
-    lineHeight: 20,
-    marginTop: 4,
-  },
   errorContainer: {
-    backgroundColor: "#2a1f1f",
-    borderRadius: 12,
+    backgroundColor: "#1C3C54",
+    borderRadius: 16,
     padding: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255, 123, 123, 0.3)",
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
   },
   errorText: {
-    color: "#ff7b7b",
+    color: "#FF453A",
     fontSize: 14,
     flex: 1,
     lineHeight: 20,
   },
   warningContainer: {
-    backgroundColor: "#2a241f",
-    borderRadius: 12,
+    backgroundColor: "#1C3C54",
+    borderRadius: 16,
     padding: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255, 165, 0, 0.3)",
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
@@ -706,44 +699,43 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   warningTitle: {
-    color: "#ffa500",
+    color: "#F79E1B",
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "600",
     marginBottom: 4,
   },
   warningText: {
-    color: "#ffa500",
+    color: "#F79E1B",
     fontSize: 14,
     lineHeight: 20,
   },
   jobsSection: {
     gap: 16,
+    marginTop: 10,
   },
   searchResultsHeader: {
     gap: 8,
+    marginBottom: 4,
   },
   searchInfoContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginTop: 4,
+    gap: 6,
   },
   searchInfoText: {
     fontSize: 14,
-    color: "#b0c7c0",
+    color: "#738A9D",
     flex: 1,
   },
   searchInfoHighlight: {
-    color: "#3fe1c3",
+    color: "white",
     fontWeight: "600",
   },
-  jobCard: {
-    backgroundColor: "#11141b",
-    borderRadius: 16,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: "rgba(63, 225, 195, 0.3)",
-    gap: 12,
+  itemCard: {
+    backgroundColor: "#133E59", // Inner card background
+    borderRadius: 20,
+    padding: 20,
+    gap: 14,
   },
   jobHeader: {
     gap: 8,
@@ -751,22 +743,30 @@ const styles = StyleSheet.create({
   jobTitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 12,
+  },
+  itemIconWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#1C3C54",
+    alignItems: "center",
+    justifyContent: "center",
   },
   jobTitle: {
     fontSize: 18,
     color: "white",
-    fontWeight: "700",
+    fontWeight: "600",
     flex: 1,
   },
   employerName: {
     fontSize: 15,
     color: "#3fe1c3",
-    fontWeight: "600",
+    fontWeight: "500",
+    marginLeft: 52, // Align with text past the icon
   },
   jobDetails: {
     gap: 8,
-    marginTop: 4,
   },
   jobDetailRow: {
     flexDirection: "row",
@@ -775,36 +775,40 @@ const styles = StyleSheet.create({
   },
   jobDetailText: {
     fontSize: 14,
-    color: "#b0c7c0",
+    color: "#8FA8BB",
   },
   jobDescription: {
     fontSize: 14,
-    color: "#d7e0de",
-    lineHeight: 20,
-    marginTop: 8,
+    color: "#738A9D",
+    lineHeight: 22,
+    marginTop: 4,
+  },
+  itemDescription: {
+    fontSize: 14,
+    color: "#8FA8BB",
+    lineHeight: 22,
   },
   jobActions: {
     gap: 10,
     marginTop: 8,
   },
   applyButton: {
-    backgroundColor: "#3fe1c3",
-    paddingVertical: 12,
-    borderRadius: 10,
+    backgroundColor: "#254D6B", // Blue from the card mockups
+    paddingVertical: 14,
+    borderRadius: 14,
     alignItems: "center",
   },
-  applyButtonDisabled: {
-    backgroundColor: "#2a2a2a",
-    opacity: 0.5,
+  applyButtonPressed: {
+    backgroundColor: "#1C3C54",
   },
   applyButtonText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#08090d",
+    fontSize: 15,
+    fontWeight: "600",
+    color: "white",
   },
   statusButtons: {
     flexDirection: "row",
-    gap: 8,
+    gap: 10,
   },
   statusButton: {
     flex: 1,
@@ -812,25 +816,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#3fe1c3",
-    backgroundColor: "transparent",
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: "#1C3C54",
   },
   statusButtonActive: {
-    backgroundColor: "#3fe1c3",
-    borderColor: "#3fe1c3",
+    backgroundColor: "#23B97E", // Green from the card mockups
   },
   statusButtonDisabled: {
     opacity: 0.5,
   },
   statusButtonText: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#3fe1c3",
+    fontWeight: "500",
+    color: "#738A9D",
   },
   statusButtonTextActive: {
-    color: "#08090d",
+    color: "white",
+    fontWeight: "600",
   },
 });

@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, Stack } from "expo-router";
 import {
   sendPasswordResetEmail,
   updateEmail,
@@ -19,6 +19,9 @@ import {
   View,
 } from "react-native";
 
+import { Ionicons } from "@expo/vector-icons"; // Added missing import
+import { useSafeAreaInsets } from "react-native-safe-area-context"; // Added missing import
+
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useAuth, type OnboardingData } from "@/contexts/auth";
 import { auth, db } from "@/lib/firebase";
@@ -33,7 +36,9 @@ type Profile = {
 };
 
 export default function Settings() {
+  const insets = useSafeAreaInsets(); // Defines the padding for the notch
   const { email, signOut } = useAuth();
+  
   const [profile, setProfile] = useState<Profile>({
     fullName: "",
     email: email ?? "",
@@ -42,32 +47,22 @@ export default function Settings() {
     state: "",
     zip: "",
   });
+  
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [sendingCode, setSendingCode] = useState(false);
-  const [verifyingCode, setVerifyingCode] = useState(false);
-  const [verificationId, setVerificationId] = useState("");
-  const [smsCode, setSmsCode] = useState("");
   const [initialPhone, setInitialPhone] = useState("");
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
   const [editingOnboarding, setEditingOnboarding] = useState(false);
   const [savingOnboarding, setSavingOnboarding] = useState(false);
 
   const user = auth.currentUser;
-  // Phone verification temporarily disabled - expo-firebase-recaptcha was deprecated
-  // const recaptchaVerifier = useRef<FirebaseRecaptchaVerifierModal>(null);
 
   const isValidEmail = useMemo(
     () => /^\S+@\S+\.\S+$/.test(profile.email.trim()),
     [profile.email],
   );
-
-  useEffect(() => {
-    setVerificationId("");
-    setSmsCode("");
-  }, [profile.phoneNumber]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -89,7 +84,6 @@ export default function Settings() {
           });
           setInitialPhone(phone);
           
-          // Load onboarding data if it exists
           if (data.onboardingData) {
             setOnboardingData(data.onboardingData as OnboardingData);
           }
@@ -162,11 +156,7 @@ export default function Settings() {
         updates.phoneVerifiedAt = null;
       }
 
-      await setDoc(
-        userRef,
-        updates,
-        { merge: true },
-      );
+      await setDoc(userRef, updates, { merge: true });
 
       setMessage("Profile updated.");
       setInitialPhone(trimmedPhone);
@@ -189,134 +179,6 @@ export default function Settings() {
     } catch {
       setError("Unable to send reset email right now.");
     }
-  };
-
-  const handleSendVerificationCode = async () => {
-    // Phone verification temporarily disabled - expo-firebase-recaptcha was deprecated
-    setError("Phone verification is currently unavailable. This feature will be restored in a future update.");
-    return;
-    
-    /* Original code commented out - requires recaptcha
-    if (!user) {
-      setError("Sign in to verify your phone.");
-      return;
-    }
-    const phoneNumber = profile.phoneNumber.trim();
-    if (!phoneNumber) {
-      setError("Add a phone number first.");
-      return;
-    }
-    if (!phoneNumber.startsWith("+")) {
-      setError("Include country code (e.g., +1...) for SMS verification.");
-      return;
-    }
-
-    setSendingCode(true);
-    setError("");
-    setMessage("");
-    try {
-      const verifier = recaptchaVerifier.current;
-      if (!verifier) {
-        setError("Recaptcha not ready. Try again.");
-        return;
-      }
-      const provider = new PhoneAuthProvider(auth);
-      const id = await provider.verifyPhoneNumber(phoneNumber, verifier);
-      setVerificationId(id);
-      setSmsCode("");
-      setMessage("SMS code sent. Check your phone.");
-    } catch (err) {
-      if (err instanceof FirebaseError) {
-        switch (err.code) {
-          case "auth/invalid-phone-number":
-            setError("That phone number isn't valid. Use full E.164 format (e.g., +1...).");
-            break;
-          case "auth/missing-phone-number":
-            setError("Enter a phone number to verify.");
-            break;
-          case "auth/too-many-requests":
-            setError("Too many attempts. Wait a bit and try again.");
-            break;
-          case "auth/quota-exceeded":
-            setError("Verification quota exceeded. Try again later.");
-            break;
-          case "auth/billing-not-enabled":
-            setError(
-              "Phone verification requires Firebase billing to be enabled. Turn on billing, then retry.",
-            );
-            break;
-          default:
-            setError(err.message || "Unable to send verification code. Please try again.");
-        }
-      } else {
-        setError("Unable to send verification code. Please try again.");
-      }
-    } finally {
-      setSendingCode(false);
-    }
-    */
-  };
-
-  const handleConfirmCode = async () => {
-    // Phone verification temporarily disabled - expo-firebase-recaptcha was deprecated
-    setError("Phone verification is currently unavailable. This feature will be restored in a future update.");
-    return;
-    
-    /* Original code commented out - requires recaptcha
-    if (!user) {
-      setError("Sign in to verify your phone.");
-      return;
-    }
-    if (!verificationId) {
-      setError("Request a code first.");
-      return;
-    }
-    const code = smsCode.trim();
-    if (code.length < 6) {
-      setError("Enter the 6-digit code you received.");
-      return;
-    }
-
-    setVerifyingCode(true);
-    setError("");
-    setMessage("");
-    try {
-      const credential = PhoneAuthProvider.credential(verificationId, code);
-      await linkWithCredential(user, credential);
-      const userRef = doc(db, "users", user.uid);
-      await setDoc(
-        userRef,
-        {
-          phoneNumber: profile.phoneNumber.trim(),
-          phoneVerified: true,
-          phoneVerifiedAt: serverTimestamp(),
-        },
-        { merge: true },
-      );
-      setMessage("Phone verified and saved.");
-      setInitialPhone(profile.phoneNumber.trim());
-      setVerificationId("");
-      setSmsCode("");
-    } catch (err) {
-      if (err instanceof FirebaseError) {
-        switch (err.code) {
-          case "auth/invalid-verification-code":
-          case "auth/invalid-verification-id":
-            setError("Invalid code. Request a new one and try again.");
-            break;
-          case "auth/session-expired":
-            setError("Verification session expired. Resend the code.");
-            break;
-          default:
-            setError(err.message || "Invalid code or verification expired. Try again.");
-        }
-      } else {
-        setError("Invalid code or verification expired. Try again.");
-      }
-    } finally {
-      setVerifyingCode(false);
-    }
-    */
   };
 
   const handleUpdateOnboarding = async () => {
@@ -348,9 +210,9 @@ export default function Settings() {
 
   if (!user) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Settings</Text>
-        <Text style={styles.subtitle}>Please sign in to manage your profile.</Text>
+      <View style={{ flex: 1, backgroundColor: "#02111E", padding: 20, justifyContent: "center" }}>
+        <Text style={styles.headerTitle}>Settings</Text>
+        <Text style={[styles.subtitle, { marginBottom: 20 }]}>Please sign in to manage your profile.</Text>
         <Pressable style={styles.primaryButton} onPress={() => router.replace("/")}>
           <Text style={styles.primaryButtonLabel}>Go to Sign In</Text>
         </Pressable>
@@ -359,34 +221,46 @@ export default function Settings() {
   }
 
   return (
-    <View style={styles.container}>
-      {/* FirebaseRecaptchaVerifierModal removed - expo-firebase-recaptcha was deprecated */}
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      
       <KeyboardAvoidingView
-        style={{ flex: 1, width: "100%" }}
+        style={{ flex: 1, backgroundColor: "#02111E" }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <ScrollView contentContainerStyle={[styles.scroll, styles.scrollInset]}>
+        <ScrollView 
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingTop: insets.top, paddingBottom: insets.bottom + 40 }
+          ]}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
           <View style={styles.header}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <IconSymbol name="gearshape.fill" size={28} color="#3fe1c3" />
-              <Text style={styles.title}>Profile Settings</Text>
+            <View style={styles.titleRow}>
+              <View style={styles.titleContainer}>
+                <View style={styles.iconContainer}>
+                  <IconSymbol name="gearshape.fill" size={22} color="#3fe1c3" />
+                </View>
+                <Text style={styles.headerTitle}>Profile Settings</Text>
+              </View>
             </View>
             <Text style={styles.subtitle}>
-              Update your profile details.
+              Update your profile details and preferences
             </Text>
           </View>
 
           {loading ? (
-            <ActivityIndicator color="#3fe1c3" />
+            <ActivityIndicator color="#3fe1c3" style={{ marginTop: 40 }} />
           ) : (
-            <>
+            <View style={styles.contentCard}>
               <View style={styles.fieldGroup}>
                 <Text style={styles.label}>Full Name *</Text>
                 <TextInput
                   value={profile.fullName}
                   onChangeText={(text) => handleChange("fullName", text)}
                   placeholder="Your full name"
-                  placeholderTextColor="#6f7d83"
+                  placeholderTextColor="#738A9D"
                   style={styles.input}
                 />
               </View>
@@ -399,7 +273,7 @@ export default function Settings() {
                   autoCapitalize="none"
                   keyboardType="email-address"
                   placeholder="you@example.com"
-                  placeholderTextColor="#6f7d83"
+                  placeholderTextColor="#738A9D"
                   style={styles.input}
                 />
               </View>
@@ -411,23 +285,10 @@ export default function Settings() {
                   onChangeText={(text) => handleChange("phoneNumber", text)}
                   keyboardType="phone-pad"
                   placeholder="+1 555-123-4567"
-                  placeholderTextColor="#6f7d83"
+                  placeholderTextColor="#738A9D"
                   style={styles.input}
                 />
               </View>
-              {verificationId ? (
-                <View style={styles.fieldGroup}>
-                  <Text style={styles.label}>Enter SMS Code</Text>
-                  <TextInput
-                    value={smsCode}
-                    onChangeText={setSmsCode}
-                    keyboardType="number-pad"
-                    placeholder="123456"
-                    placeholderTextColor="#6f7d83"
-                    style={styles.input}
-                  />
-                </View>
-              ) : null}
 
               <View style={styles.fieldRow}>
                 <View style={[styles.fieldGroup, styles.flexItem]}>
@@ -436,7 +297,7 @@ export default function Settings() {
                     value={profile.city}
                     onChangeText={(text) => handleChange("city", text)}
                     placeholder="City"
-                    placeholderTextColor="#6f7d83"
+                    placeholderTextColor="#738A9D"
                     style={styles.input}
                   />
                 </View>
@@ -446,7 +307,7 @@ export default function Settings() {
                     value={profile.state}
                     onChangeText={(text) => handleChange("state", text)}
                     placeholder="State"
-                    placeholderTextColor="#6f7d83"
+                    placeholderTextColor="#738A9D"
                     style={styles.input}
                   />
                 </View>
@@ -457,13 +318,12 @@ export default function Settings() {
                     onChangeText={(text) => handleChange("zip", text)}
                     keyboardType="number-pad"
                     placeholder="12345"
-                    placeholderTextColor="#6f7d83"
+                    placeholderTextColor="#738A9D"
                     style={styles.input}
                   />
                 </View>
               </View>
 
-              {/* Onboarding Preferences Section */}
               {onboardingData && (
                 <View style={styles.section}>
                   <View style={styles.sectionHeader}>
@@ -499,21 +359,21 @@ export default function Settings() {
                           disabled={savingOnboarding}
                         >
                           {savingOnboarding ? (
-                            <ActivityIndicator color="#08090d" />
+                            <ActivityIndicator color="#02111E" />
                           ) : (
-                            <Text style={styles.primaryButtonLabel}>Edit Preferences</Text>
+                            <Text style={styles.primaryButtonLabel}>Edit Details</Text>
                           )}
                         </Pressable>
                       </View>
                     </View>
                   ) : (
-                    <>
+                    <View style={styles.infoContainer}>
                       <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Career Goal:</Text>
+                        <Text style={styles.infoLabel}>Goal:</Text>
                         <Text style={styles.infoValue}>{onboardingData.careerGoal}</Text>
                       </View>
                       <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Job Fields:</Text>
+                        <Text style={styles.infoLabel}>Fields:</Text>
                         <Text style={styles.infoValue}>
                           {onboardingData.jobFields.length > 0
                             ? onboardingData.jobFields.join(", ")
@@ -521,11 +381,11 @@ export default function Settings() {
                         </Text>
                       </View>
                       <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Resume Status:</Text>
+                        <Text style={styles.infoLabel}>Resume:</Text>
                         <Text style={styles.infoValue}>{onboardingData.resumeStatus}</Text>
                       </View>
                       <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Help Needed:</Text>
+                        <Text style={styles.infoLabel}>Help:</Text>
                         <Text style={styles.infoValue}>
                           {onboardingData.helpNeeded.length > 0
                             ? onboardingData.helpNeeded.join(", ")
@@ -533,151 +393,152 @@ export default function Settings() {
                         </Text>
                       </View>
                       <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Availability:</Text>
+                        <Text style={styles.infoLabel}>Avail:</Text>
                         <Text style={styles.infoValue}>{onboardingData.availability}</Text>
                       </View>
-                    </>
+                    </View>
                   )}
                 </View>
               )}
 
-              {error ? <Text style={styles.error}>{error}</Text> : null}
-              {message ? <Text style={styles.info}>{message}</Text> : null}
-
               <Pressable
                 style={({ pressed }) => [
                   styles.primaryButton,
-                  pressed && !saving ? { opacity: 0.9 } : null,
+                  pressed && !saving ? { opacity: 0.85 } : null,
+                  styles.saveChangesButton,
                 ]}
                 disabled={saving}
                 onPress={handleSave}
               >
                 {saving ? (
-                  <ActivityIndicator color="#08090d" />
+                  <ActivityIndicator color="#02111E" />
                 ) : (
                   <Text style={styles.primaryButtonLabel}>Save Changes</Text>
                 )}
               </Pressable>
 
-              <View style={styles.actionRow}>
+              {error ? <Text style={styles.error}>{error}</Text> : null}
+              {message ? <Text style={styles.info}>{message}</Text> : null}
+
+              <View style={styles.buttonStack}>
                 <Pressable
-                  style={styles.secondaryButton}
+                  style={({ pressed }) => [
+                    styles.resetPasswordButton,
+                    pressed && styles.resetPasswordButtonPressed,
+                  ]}
                   onPress={handleResetPassword}
                 >
-                  <Text style={styles.secondaryButtonLabel}>Reset Your Password</Text>
+                  <Text style={styles.secondaryButtonLabel}>Reset Password</Text>
                 </Pressable>
                 <Pressable
-                  style={styles.secondaryButton}
-                  onPress={handleSendVerificationCode}
-                  disabled={sendingCode}
+                  style={({ pressed }) => [
+                    styles.signOutButton,
+                    pressed && styles.signOutButtonPressed,
+                  ]}
+                  onPress={handleSignOut}
                 >
-                  {sendingCode ? (
-                    <ActivityIndicator color="#3fe1c3" />
-                  ) : (
-                    <Text style={styles.secondaryButtonLabel}>
-                      {verificationId ? "Resend Code" : "Verify Phone Number"}
-                    </Text>
-                  )}
+                  <Ionicons name="log-out-outline" size={20} color="#FF453A" />
+                  <Text style={styles.signOutLabel}>Sign Out</Text>
                 </Pressable>
               </View>
 
-              {verificationId ? (
-                <Pressable
-                  style={[
-                    styles.primaryButton,
-                    verifyingCode ? { opacity: 0.9 } : null,
-                  ]}
-                  onPress={handleConfirmCode}
-                  disabled={verifyingCode}
-                >
-                  {verifyingCode ? (
-                    <ActivityIndicator color="#08090d" />
-                  ) : (
-                    <Text style={styles.primaryButtonLabel}>Submit Code</Text>
-                  )}
-                </Pressable>
-              ) : null}
-
-              <Pressable style={styles.signOutButton} onPress={handleSignOut}>
-                <Text style={styles.signOutLabel}>Sign Out</Text>
-              </Pressable>
-            </>
+            </View>
           )}
         </ScrollView>
       </KeyboardAvoidingView>
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#08090d",
-    paddingHorizontal: 18,
-    paddingTop: 24,
-  },
-  scroll: {
-    paddingBottom: 32,
-    gap: 14,
-  },
-  scrollInset: {
-    paddingRight: 10, // gives the scrollbar its own gutter so it doesn't overlap inputs
+  scrollContent: {
+    paddingHorizontal: 20,
+    gap: 20,
   },
   header: {
-    gap: 6,
+    gap: 12,
   },
-  title: {
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  titleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#112638",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
     fontSize: 28,
     color: "white",
     fontWeight: "700",
   },
   subtitle: {
     fontSize: 15,
-    color: "#b0c7c0",
+    color: "#738A9D",
+    lineHeight: 22,
+  },
+  contentCard: {
+    backgroundColor: "#112638",
+    borderRadius: 24,
+    padding: 24,
+    gap: 16,
   },
   fieldGroup: {
     gap: 8,
-    marginTop: 6,
   },
   label: {
-    color: "#d7e0de",
+    color: "#8FA8BB",
     fontSize: 14,
+    fontWeight: "500",
+    marginLeft: 4,
   },
   input: {
-    backgroundColor: "#11141b",
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    backgroundColor: "#1C3C54",
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     color: "white",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    fontSize: 15,
   },
   fieldRow: {
     flexDirection: "row",
-    gap: 10,
+    gap: 12,
   },
   flexItem: {
     flex: 1,
   },
   primaryButton: {
     backgroundColor: "#3fe1c3",
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderRadius: 14,
     alignItems: "center",
-    marginTop: 8,
+    justifyContent: "center",
+  },
+  saveChangesButton: {
+    marginTop: 0,
   },
   primaryButtonLabel: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#08090d",
+    color: "#02111E",
   },
   secondaryButton: {
-    borderColor: "#3fe1c3",
-    borderWidth: 1,
-    paddingVertical: 12,
+    backgroundColor: "#1C3C54",
+    paddingVertical: 14,
     paddingHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: "center",
+    justifyContent: "center",
     flex: 1,
   },
   secondaryButtonLabel: {
@@ -688,32 +549,55 @@ const styles = StyleSheet.create({
   },
   actionRow: {
     flexDirection: "row",
-    gap: 10,
+    gap: 12,
+    marginTop: 8,
+  },
+  buttonStack: {
+    gap: 12,
+  },
+  resetPasswordButton: {
+    backgroundColor: "#254D6B",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  resetPasswordButtonPressed: {
+    backgroundColor: "#1C3C54",
   },
   signOutButton: {
-    marginTop: 10,
-    paddingVertical: 12,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    backgroundColor: "rgba(255, 69, 58, 0.1)",
+    borderRadius: 14,
+  },
+  signOutButtonPressed: {
+    backgroundColor: "rgba(255, 69, 58, 0.2)",
   },
   signOutLabel: {
-    color: "#f55c7a",
+    color: "#FF453A",
     fontWeight: "600",
+    fontSize: 15,
   },
   error: {
-    color: "#ff7b7b",
+    color: "#FF453A",
     fontSize: 14,
-    marginTop: 4,
+    textAlign: "center",
   },
   info: {
     color: "#3fe1c3",
     fontSize: 14,
-    marginTop: 4,
+    textAlign: "center",
   },
   section: {
-    marginTop: 24,
+    marginTop: 16,
     paddingTop: 24,
     borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.08)",
+    borderTopColor: "#1C3C54",
   },
   sectionHeader: {
     flexDirection: "row",
@@ -727,53 +611,52 @@ const styles = StyleSheet.create({
     color: "white",
   },
   editButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: "rgba(63, 225, 195, 0.1)",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
   editButtonText: {
     color: "#3fe1c3",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
+  },
+  infoContainer: {
+    backgroundColor: "#1C3C54",
+    borderRadius: 16,
+    padding: 16,
+    gap: 12,
   },
   infoRow: {
     flexDirection: "row",
-    marginTop: 12,
-    gap: 8,
+    alignItems: "flex-start",
+    gap: 12,
   },
   infoLabel: {
-    color: "#96a3a1",
+    color: "#8FA8BB",
     fontSize: 14,
     fontWeight: "500",
-    minWidth: 100,
+    width: 60,
   },
   infoValue: {
     color: "white",
     fontSize: 14,
     flex: 1,
-  },
-  infoBox: {
-    backgroundColor: "#11141b",
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
-  },
-  infoText: {
-    color: "white",
-    fontSize: 14,
+    lineHeight: 20,
   },
   buttonRow: {
     flexDirection: "row",
-    gap: 10,
+    gap: 12,
     marginTop: 16,
   },
   editSection: {
-    gap: 12,
+    backgroundColor: "#1C3C54",
+    borderRadius: 16,
+    padding: 16,
   },
   editSectionText: {
-    color: "#96a3a1",
+    color: "#8FA8BB",
     fontSize: 14,
-    marginBottom: 8,
+    lineHeight: 20,
   },
 });

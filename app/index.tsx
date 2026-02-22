@@ -58,7 +58,7 @@ export default function LoginScreen() {
           router.replace("/onboarding");
         } else {
           console.log("Redirecting to main app");
-          router.replace("/(tabs)");
+          router.replace("/services");
         }
         setJustLoggedIn(false);
       }, 500); // Increased delay to ensure onboarding status is loaded
@@ -101,99 +101,119 @@ export default function LoginScreen() {
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
         style={styles.scrollView}
-        bounces={false} // Prevent bounce on iOS to avoid weird behavior with autofill
+        bounces={false} 
       >
         <View style={styles.form}>
           <View style={styles.header}>
-            <Image
-              source={require("@/assets/images/Logo.png")}
-              style={styles.heroLogo}
-              resizeMode="contain"
-            />
-            <Text style={styles.logo}>Salam Consulting</Text>
+            <View style={styles.logoContainer}>
+              <Image
+                // Update this path to where your new logo is saved
+                source={require("../assets/images/salam_logo.png")} 
+                style={styles.heroLogo}
+                resizeMode="contain"
+              />
+            </View>
+            <Text style={styles.logoText}>SALAM CONSULTING</Text>
             <Text style={styles.title}>Welcome Back</Text>
             <Text style={styles.subtitle}>
-              Sign in to continue exploring the app.
+              Sign in to continue your journey
             </Text>
           </View>
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              value={email}
-              onChangeText={setEmail}
-              onFocus={handleInputFocus}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              textContentType="emailAddress"
-              autoComplete="email"
-              autoCorrect={false}
-              placeholder="you@salam-consulting.com"
-              placeholderTextColor="#6f7d83"
-              style={styles.input}
-            />
+          {/* Fancy inner card */}
+          <View style={styles.card}>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Email Address</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="mail-outline" size={20} color="#738A9D" style={styles.inputIcon} />
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  onFocus={handleInputFocus}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  textContentType="emailAddress"
+                  autoComplete="email"
+                  autoCorrect={false}
+                  placeholder="you@example.com"
+                  placeholderTextColor="#738A9D"
+                  style={styles.input}
+                />
+              </View>
+            </View>
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="lock-closed-outline" size={20} color="#738A9D" style={styles.inputIcon} />
+                <TextInput
+                  value={password}
+                  onChangeText={setPassword}
+                  onFocus={handleInputFocus}
+                  secureTextEntry
+                  textContentType="password"
+                  autoComplete="password"
+                  autoCorrect={false}
+                  placeholder="••••••••"
+                  placeholderTextColor="#738A9D"
+                  style={styles.input}
+                />
+              </View>
+            </View>
+
+            {error ? (
+              <View style={styles.errorContainer}>
+                <Ionicons name="alert-circle" size={16} color="#FF453A" />
+                <Text style={styles.error}>{error}</Text>
+              </View>
+            ) : null}
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.cta,
+                pressed && !loading ? { opacity: 0.85, transform: [{ scale: 0.98 }] } : null,
+              ]}
+              disabled={loading}
+              onPress={handleLogin}
+            >
+              {loading ? (
+                <ActivityIndicator color="#02111E" />
+              ) : (
+                <Text style={styles.ctaLabel}>Sign In</Text>
+              )}
+            </Pressable>
+
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.googleButton,
+                pressed && !loading && googleSignInReady ? { opacity: 0.85, transform: [{ scale: 0.98 }] } : null,
+                !googleSignInReady ? { opacity: 0.5 } : null,
+              ]}
+              disabled={loading || !googleSignInReady}
+              onPress={handleGoogleSignIn}
+            >
+              <Ionicons name="logo-google" size={20} color="white" />
+              <Text style={styles.googleButtonText}>
+                {googleSignInReady ? "Google" : "Loading..."}
+              </Text>
+            </Pressable>
           </View>
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              value={password}
-              onChangeText={setPassword}
-              onFocus={handleInputFocus}
-              secureTextEntry
-              textContentType="password"
-              autoComplete="password"
-              autoCorrect={false}
-              placeholder="••••••••"
-              placeholderTextColor="#6f7d83"
-              style={styles.input}
-            />
-          </View>
-
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.cta,
-              pressed && !loading ? { opacity: 0.85 } : null,
-            ]}
-            disabled={loading}
-            onPress={handleLogin}
-          >
-            {loading ? (
-              <ActivityIndicator color="#08090d" />
-            ) : (
-              <Text style={styles.ctaLabel}>Sign In</Text>
-            )}
-          </Pressable>
-
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.googleButton,
-              pressed && !loading && googleSignInReady ? { opacity: 0.85 } : null,
-              !googleSignInReady ? { opacity: 0.5 } : null,
-            ]}
-            disabled={loading || !googleSignInReady}
-            onPress={handleGoogleSignIn}
-          >
-            <Ionicons name="logo-google" size={20} color="white" />
-            <Text style={styles.googleButtonText}>
-              {googleSignInReady ? "Continue with Google" : "Loading..."}
-            </Text>
-          </Pressable>
 
           <Pressable
             onPress={() => router.push("/create-account")}
-            style={styles.secondary}
+            style={({ pressed }) => [
+              styles.secondary,
+              pressed ? { opacity: 0.7 } : null
+            ]}
           >
             <Text style={styles.secondaryText}>
-              New here? <Text style={styles.link}>Create an account</Text>
+              Don't have an account? <Text style={styles.link}>Sign Up</Text>
             </Text>
           </Pressable>
         </View>
@@ -205,114 +225,179 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#08090d",
+    backgroundColor: "#02111E", // Deep background
   },
   scrollView: {
-    backgroundColor: "#08090d",
+    backgroundColor: "#02111E",
   },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
     justifyContent: "center",
     paddingVertical: 40,
-    backgroundColor: "#08090d",
+    backgroundColor: "#02111E",
   },
   form: {
-    gap: 20,
+    gap: 32, // More breathing room
   },
   header: {
-    gap: 6,
+    gap: 8,
     alignItems: "center",
+    marginTop: 20,
+  },
+  logoContainer: {
+    padding: 16,
+    backgroundColor: "#112638",
+    borderRadius: 32,
+    marginBottom: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   heroLogo: {
-    width: 140,
-    height: 140,
-    marginBottom: 8,
+    width: 80, 
+    height: 80,
   },
-  logo: {
+  logoText: {
     color: "#3fe1c3",
-    fontWeight: "700",
-    letterSpacing: 1,
+    fontWeight: "800",
+    letterSpacing: 3,
+    fontSize: 12,
+    marginBottom: 4,
   },
   title: {
     fontSize: 32,
     color: "white",
-    fontWeight: "700",
+    fontWeight: "800",
   },
   subtitle: {
-    color: "#a8b4b1",
+    color: "#738A9D",
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  card: {
+    backgroundColor: "#112638", 
+    borderRadius: 28,
+    padding: 24,
+    gap: 20, 
+    borderWidth: 1,
+    borderColor: "rgba(63, 225, 195, 0.1)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+    elevation: 10,
   },
   fieldGroup: {
     gap: 8,
   },
   label: {
-    color: "#d7e0de",
-    fontSize: 14,
+    color: "#8FA8BB",
+    fontSize: 13,
+    fontWeight: "600",
+    marginLeft: 4,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1C3C54",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.05)",
+  },
+  inputIcon: {
+    paddingLeft: 16,
   },
   input: {
-    backgroundColor: "#11141b",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 16,
     color: "white",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  errorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 69, 58, 0.1)",
+    padding: 12,
+    borderRadius: 12,
+    gap: 8,
   },
   error: {
-    color: "#ff7b7b",
+    color: "#FF453A",
+    fontSize: 13,
+    fontWeight: "500",
+    flex: 1,
   },
   cta: {
     backgroundColor: "#3fe1c3",
-    paddingVertical: 14,
-    borderRadius: 14,
+    paddingVertical: 18,
+    borderRadius: 16,
     alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+    shadowColor: "#3fe1c3",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   ctaLabel: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#08090d",
+    fontWeight: "800",
+    color: "#02111E",
+    letterSpacing: 0.5,
   },
   secondary: {
     alignItems: "center",
-    marginTop: 6,
+    padding: 16,
   },
   secondaryText: {
-    color: "#96a3a1",
+    color: "#738A9D",
+    fontSize: 15,
+    fontWeight: "500",
   },
   link: {
     color: "#3fe1c3",
-    fontWeight: "600",
+    fontWeight: "700",
   },
   divider: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginVertical: 8,
+    gap: 16,
+    marginVertical: 4,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
   },
   dividerText: {
-    color: "#96a3a1",
+    color: "#738A9D",
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: "700",
+    letterSpacing: 1,
   },
   googleButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 10,
-    backgroundColor: "#11141b",
-    paddingVertical: 14,
-    borderRadius: 14,
+    gap: 12,
+    backgroundColor: "#1C3C54",
+    paddingVertical: 16,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
   googleButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "700",
     color: "white",
+    letterSpacing: 0.5,
   },
 });

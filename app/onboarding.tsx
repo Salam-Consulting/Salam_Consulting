@@ -1,15 +1,18 @@
 import { auth, db } from "@/lib/firebase";
-import { Redirect, router } from "expo-router";
+import { Redirect, router, Stack } from "expo-router";
 import { doc, getDoc } from "firebase/firestore";
 import { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
+
+import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth, type OnboardingData } from "@/contexts/auth";
 
@@ -59,6 +62,7 @@ const AVAILABILITY_OPTIONS = [
 ];
 
 export default function OnboardingScreen() {
+  const insets = useSafeAreaInsets();
   const { completeOnboarding, isAuthenticated, onboardingCompleted } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [careerGoal, setCareerGoal] = useState("");
@@ -106,12 +110,9 @@ export default function OnboardingScreen() {
     loadExistingData();
   }, []);
 
-  // Allow editing even if onboarding is completed (user can come from settings)
-  // Only redirect if coming from initial login flow
-
   if (loadingData) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.loadingContainer, { backgroundColor: "#02111E" }]}>
         <ActivityIndicator color="#3fe1c3" size="large" />
       </View>
     );
@@ -159,10 +160,10 @@ export default function OnboardingScreen() {
       };
 
       await completeOnboarding(onboardingData);
-      router.replace("/(tabs)");
+      router.replace("/services");
     } catch (error) {
       console.error("Failed to complete onboarding", error);
-      setIsSubmitting(false); // Reset on error so user can try again
+      setIsSubmitting(false); 
     }
   };
 
@@ -184,7 +185,7 @@ export default function OnboardingScreen() {
   };
 
   const renderStep1 = () => (
-    <View style={styles.stepContainer}>
+    <View style={styles.stepCard}>
       <Text style={styles.question}>
         What is your career goal right now?
       </Text>
@@ -213,11 +214,11 @@ export default function OnboardingScreen() {
   );
 
   const renderStep2 = () => (
-    <View style={styles.stepContainer}>
+    <View style={styles.stepCard}>
       <Text style={styles.question}>
         Which job fields are you most interested in?
       </Text>
-      <Text style={styles.subtitle}>Select all that apply</Text>
+      <Text style={styles.stepSubtitle}>Select all that apply</Text>
       <View style={styles.optionsContainer}>
         {JOB_FIELDS.map((field) => (
           <Pressable
@@ -243,7 +244,7 @@ export default function OnboardingScreen() {
   );
 
   const renderStep3 = () => (
-    <View style={styles.stepContainer}>
+    <View style={styles.stepCard}>
       <Text style={styles.question}>
         Do you have a resume ready to upload?
       </Text>
@@ -272,11 +273,11 @@ export default function OnboardingScreen() {
   );
 
   const renderStep4 = () => (
-    <View style={styles.stepContainer}>
+    <View style={styles.stepCard}>
       <Text style={styles.question}>
         What do you need the most help with?
       </Text>
-      <Text style={styles.subtitle}>Select all that apply</Text>
+      <Text style={styles.stepSubtitle}>Select all that apply</Text>
       <View style={styles.optionsContainer}>
         {HELP_OPTIONS.map((help) => (
           <Pressable
@@ -302,7 +303,7 @@ export default function OnboardingScreen() {
   );
 
   const renderStep5 = () => (
-    <View style={styles.stepContainer}>
+    <View style={styles.stepCard}>
       <Text style={styles.question}>
         When are you usually available for coaching?
       </Text>
@@ -331,15 +332,28 @@ export default function OnboardingScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView
         ref={scrollViewRef}
-        contentContainerStyle={styles.scrollContent}
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 40 }
+        ]}
         showsVerticalScrollIndicator={false}
+        bounces={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Let's get to know you</Text>
-          <Text style={styles.stepIndicator}>
+          <View style={styles.titleRow}>
+            <View style={styles.titleContainer}>
+              <View style={styles.iconContainer}>
+                <Ionicons name="rocket" size={22} color="#3fe1c3" />
+              </View>
+              <Text style={styles.headerTitle}>Let's get to know you</Text>
+            </View>
+          </View>
+          <Text style={styles.subtitle}>
             Step {currentStep} of 5
           </Text>
         </View>
@@ -353,148 +367,166 @@ export default function OnboardingScreen() {
         <View style={styles.buttonContainer}>
           {currentStep > 1 && (
             <Pressable
-              style={[styles.button, styles.backButton]}
+              style={styles.secondaryButton}
               onPress={handleBack}
             >
-              <Text style={styles.backButtonText}>Back</Text>
+              <Text style={styles.secondaryButtonText}>Back</Text>
             </Pressable>
           )}
           {currentStep < 5 ? (
             <Pressable
-              style={[
-                styles.button,
-                styles.nextButton,
-                !canProceed() && styles.buttonDisabled,
+              style={({ pressed }) => [
+                styles.primaryButton,
+                (!canProceed() || pressed) && styles.buttonDisabled,
               ]}
               onPress={handleNext}
               disabled={!canProceed()}
             >
-              <Text style={styles.nextButtonText}>Next</Text>
+              <Text style={styles.primaryButtonText}>Next</Text>
             </Pressable>
           ) : (
             <Pressable
-              style={[
-                styles.button,
-                styles.submitButton,
-                (!canProceed() || isSubmitting) && styles.buttonDisabled,
+              style={({ pressed }) => [
+                styles.primaryButton,
+                (!canProceed() || isSubmitting || pressed) && styles.buttonDisabled,
               ]}
               onPress={handleSubmit}
               disabled={!canProceed() || isSubmitting}
             >
               {isSubmitting ? (
-                <ActivityIndicator color="#08090d" />
+                <ActivityIndicator color="#02111E" />
               ) : (
-                <Text style={styles.submitButtonText}>Complete</Text>
+                <Text style={styles.primaryButtonText}>Complete</Text>
               )}
             </Pressable>
           )}
         </View>
       </ScrollView>
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  loadingContainer: {
     flex: 1,
-    backgroundColor: "#08090d",
-  },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingVertical: 40,
-    paddingBottom: 60,
-  },
-  header: {
-    marginBottom: 32,
+    justifyContent: "center",
     alignItems: "center",
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
+  scrollView: {
+    flex: 1,
+    backgroundColor: "#02111E", // Matched App Dark Theme
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    gap: 24, // Consistent spacing between header, card, and buttons
+  },
+  header: {
+    gap: 12,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  titleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#112638",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    fontSize: 26,
     color: "white",
-    marginBottom: 8,
+    fontWeight: "700",
+    flexShrink: 1,
   },
-  stepIndicator: {
-    fontSize: 14,
-    color: "#96a3a1",
+  subtitle: {
+    fontSize: 15,
+    color: "#738A9D",
+    lineHeight: 22,
+    fontWeight: "600",
   },
-  stepContainer: {
-    gap: 20,
+  stepCard: {
+    backgroundColor: "#112638", // Main Card Container
+    borderRadius: 24,
+    padding: 24,
+    gap: 16,
   },
   question: {
     fontSize: 20,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "white",
-    marginBottom: 8,
+    lineHeight: 28,
   },
-  subtitle: {
+  stepSubtitle: {
     fontSize: 14,
-    color: "#96a3a1",
-    marginBottom: 16,
+    color: "#8FA8BB",
+    marginTop: -8, // Pull closer to the question
   },
   optionsContainer: {
     gap: 12,
+    marginTop: 8,
   },
   option: {
-    backgroundColor: "#11141b",
-    borderRadius: 12,
-    paddingHorizontal: 20,
+    backgroundColor: "#1C3C54", // Input/Button color
+    borderRadius: 14,
+    paddingHorizontal: 16,
     paddingVertical: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderWidth: 2,
+    borderColor: "transparent",
   },
   optionSelected: {
-    backgroundColor: "#3fe1c3",
+    backgroundColor: "rgba(63, 225, 195, 0.15)",
     borderColor: "#3fe1c3",
   },
   optionText: {
-    fontSize: 16,
+    fontSize: 15,
     color: "white",
+    fontWeight: "500",
   },
   optionTextSelected: {
-    color: "#08090d",
-    fontWeight: "600",
+    color: "#3fe1c3",
+    fontWeight: "700",
   },
   buttonContainer: {
     flexDirection: "row",
     gap: 12,
-    marginTop: 32,
   },
-  button: {
+  primaryButton: {
     flex: 1,
-    paddingVertical: 14,
+    backgroundColor: "#3fe1c3",
+    paddingVertical: 16,
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
   },
-  backButton: {
-    backgroundColor: "#11141b",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+  primaryButtonText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#02111E",
   },
-  backButtonText: {
+  secondaryButton: {
+    flex: 1,
+    backgroundColor: "#1C3C54",
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  secondaryButtonText: {
     fontSize: 16,
     fontWeight: "600",
     color: "white",
-  },
-  nextButton: {
-    backgroundColor: "#3fe1c3",
-  },
-  nextButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#08090d",
-  },
-  submitButton: {
-    backgroundColor: "#3fe1c3",
-  },
-  submitButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#08090d",
   },
   buttonDisabled: {
     opacity: 0.5,
   },
 });
-

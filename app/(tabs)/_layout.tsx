@@ -2,6 +2,7 @@ import { Tabs, useRouter } from "expo-router";
 import { useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+
 import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors } from "@/constants/theme";
@@ -88,6 +89,7 @@ export default function TabLayout() {
           name="resume"
           options={{
             title: "Resume",
+            headerShown: false,
             tabBarButton: HapticTab,
             tabBarIcon: ({ color }) => (
               <IconSymbol name="doc.text.fill" size={26} color={color} />
@@ -99,11 +101,12 @@ export default function TabLayout() {
         <Tabs.Screen
           name="contact"
           options={{
-            title: "Contact",
-            tabBarButton: HapticTab,
-            tabBarIcon: ({ color }) => (
-              <IconSymbol name="bubble.left.and.bubble.right.fill" size={26} color={color} />
-            ),
+            href: null, // Hide from tab bar
+            //title: "Contact",
+            //tabBarButton: HapticTab,
+            //tabBarIcon: ({ color }) => (
+              //<IconSymbol name="bubble.left.and.bubble.right.fill" size={26} color={color} />
+            //),
           }}
         />
 
