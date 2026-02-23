@@ -41,7 +41,7 @@ export default function TabLayout() {
       {/* JOBS */}
       <NativeTabs.Trigger name="jobs">
         <Label>Jobs</Label>
-        <Icon sf="text.document" />
+        <Icon sf="banknote" />
       </NativeTabs.Trigger>
 
       {/* RESUME */}
@@ -56,7 +56,7 @@ export default function TabLayout() {
       {/* ABOUT */}
       <NativeTabs.Trigger name="about">
         <Label>About</Label>
-        <Icon sf="person.crop.circle.fill" />
+        <Icon sf="info.circle" />
       </NativeTabs.Trigger>
 
       {/* SETTINGS */}

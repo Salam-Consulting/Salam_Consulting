@@ -291,7 +291,7 @@ export default function Jobs() {
           <View style={styles.titleRow}>
             <View style={styles.titleContainer}>
               <View style={styles.iconContainer}>
-                <IconSymbol name="text.document" size={22} color="#3fe1c3" />
+                <IconSymbol name="banknote" size={22} color="#3fe1c3" />
               </View>
               <Text style={styles.title}>Job Search</Text>
             </View>
