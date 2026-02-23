@@ -41,10 +41,10 @@ export default {
       [
         "expo-splash-screen",
         {
-          image: "./assets/images/splash-icon.png",
-          imageWidth: 200,
+          image: "./assets/images/salam_logo.png",
+          imageWidth: 280,
           resizeMode: "contain",
-          backgroundColor: "#ffffff",
+          backgroundColor: "#000000",
           dark: {
             backgroundColor: "#000000"
           }
