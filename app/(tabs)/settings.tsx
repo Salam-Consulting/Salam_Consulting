@@ -19,8 +19,8 @@ import {
   View,
 } from "react-native";
 
-import { Ionicons } from "@expo/vector-icons"; // Added missing import
-import { useSafeAreaInsets } from "react-native-safe-area-context"; // Added missing import
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useAuth, type OnboardingData } from "@/contexts/auth";
@@ -36,7 +36,6 @@ type Profile = {
 };
 
 export default function Settings() {
-  const insets = useSafeAreaInsets(); // Defines the padding for the notch
   const { email, signOut } = useAuth();
   
   const [profile, setProfile] = useState<Profile>({
@@ -223,19 +222,17 @@ export default function Settings() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      
-      <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: "#02111E" }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <ScrollView 
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingTop: insets.top, paddingBottom: insets.bottom + 40 }
-          ]}
-          showsVerticalScrollIndicator={false}
-          bounces={false}
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#02111E" }} edges={["top", "bottom"]}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+          >
           <View style={styles.header}>
             <View style={styles.titleRow}>
               <View style={styles.titleContainer}>
@@ -444,8 +441,9 @@ export default function Settings() {
 
             </View>
           )}
-        </ScrollView>
-      </KeyboardAvoidingView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </>
   );
 }
@@ -453,6 +451,7 @@ export default function Settings() {
 const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
+    paddingBottom: 40,
     gap: 20,
   },
   header: {

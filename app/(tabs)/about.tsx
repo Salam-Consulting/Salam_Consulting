@@ -1,28 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Stack } from "expo-router"; // Added this to control the hidden header
+import { Stack } from "expo-router";
 import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function About() {
-  const insets = useSafeAreaInsets();
-
   return (
     <>
-      {/* This violently kills the hidden blank background layout from the parent router */}
       <Stack.Screen options={{ headerShown: false }} />
-      
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[
-          styles.scrollContent,
-          // Start exactly at the notch and pad the bottom
-          { paddingTop: insets.top, paddingBottom: insets.bottom + 40 }
-        ]}
-        bounces={false}
-        overScrollMode="never"
-        showsVerticalScrollIndicator={false}
-        contentInsetAdjustmentBehavior="never"
-      >
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#02111E" }} edges={["top", "bottom"]}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
         {/* Standardized App Header */}
         <View style={styles.header}>
           <View style={styles.titleRow}>
@@ -80,7 +70,8 @@ export default function About() {
             We are your permanent source of support.
           </Text>
         </View>
-      </ScrollView>
+        </ScrollView>
+      </SafeAreaView>
     </>
   );
 }
@@ -92,6 +83,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
+    paddingBottom: 40,
     gap: 20,
   },
   header: {

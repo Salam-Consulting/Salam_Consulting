@@ -1,11 +1,7 @@
-import { Tabs, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
+import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
 import { useEffect } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
 
-
-import { HapticTab } from "@/components/haptic-tab";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors } from "@/constants/theme";
 import { useAuth } from "@/contexts/auth";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
@@ -16,12 +12,11 @@ export default function TabLayout() {
 
   if (!colorScheme) colorScheme = "light";
 
-  // Redirect if not authenticated using router.replace to avoid navigation stack issues
+  // Redirect if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
       router.replace("/create-account");
     } else if (isAuthenticated && onboardingCompleted === false) {
-      // Redirect to onboarding if user hasn't completed it
       router.replace("/onboarding");
     }
   }, [isAuthenticated, onboardingCompleted, router]);
@@ -31,118 +26,47 @@ export default function TabLayout() {
     return null;
   }
 
+  // RETURN NATIVETABS DIRECTLY - NO SAFEAREAVIEW
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#08090d" }}>
-      <Tabs
-        screenOptions={{
-          headerShown: false,
+    <NativeTabs tintColor="#3fe1c3">
+      {/* HOME - Hidden from tab bar */}
+      <NativeTabs.Trigger name="index" hidden />
 
-          // Active tab color (Salam Consulting green)
-          tabBarActiveTintColor: "#3fe1c3",
+      {/* SERVICES */}
+      <NativeTabs.Trigger name="services">
+        <Label>Services</Label>
+        <Icon sf="briefcase.fill" />
+      </NativeTabs.Trigger>
 
-          // Inactive icons
-          tabBarInactiveTintColor: Colors[colorScheme].tabIconDefault,
+      {/* JOBS */}
+      <NativeTabs.Trigger name="jobs">
+        <Label>Jobs</Label>
+        <Icon sf="text.document" />
+      </NativeTabs.Trigger>
 
-          // Tab bar styling
-          tabBarStyle: {
-            backgroundColor: "#08090d",
-            borderTopColor: "rgba(255,255,255,0.08)",
-            height: 60,
-          },
-        }}
-      >
+      {/* RESUME */}
+      <NativeTabs.Trigger name="resume">
+        <Label>Resume</Label>
+        <Icon sf="doc.text.fill" />
+      </NativeTabs.Trigger>
 
-        {/* HOME - Hidden from tab bar */}
-        <Tabs.Screen
-          name="index"
-          options={{
-            href: null, // Hide from tab bar
-          }}
-        />
+      {/* CONTACT - Hidden */}
+      <NativeTabs.Trigger name="contact" hidden />
 
-        {/* SERVICES */}
-        <Tabs.Screen
-          name="services"
-          options={{
-            title: "Services",
-            tabBarButton: HapticTab,
-            tabBarIcon: ({ color }) => (
-              <IconSymbol name="briefcase.fill" size={26} color={color} />
-            ),
-          }}
-        />
+      {/* ABOUT */}
+      <NativeTabs.Trigger name="about">
+        <Label>About</Label>
+        <Icon sf="person.crop.circle.fill" />
+      </NativeTabs.Trigger>
 
-        {/* Jobs */}
-        <Tabs.Screen
-          name="jobs"
-          options={{
-            title: "Jobs",
-            tabBarButton: HapticTab,
-            tabBarIcon: ({ color }) => (
-              <IconSymbol name="text.document" size={26} color={color} />
-            ),
-          }}
-        />
+      {/* SETTINGS */}
+      <NativeTabs.Trigger name="settings">
+        <Label>Settings</Label>
+        <Icon sf="gearshape.fill" />
+      </NativeTabs.Trigger>
 
-        {/* Resume */}
-        <Tabs.Screen
-          name="resume"
-          options={{
-            title: "Resume",
-            headerShown: false,
-            tabBarButton: HapticTab,
-            tabBarIcon: ({ color }) => (
-              <IconSymbol name="doc.text.fill" size={26} color={color} />
-            ),
-          }}
-        />
-
-        {/* CONTACT */}
-        <Tabs.Screen
-          name="contact"
-          options={{
-            href: null, // Hide from tab bar
-            //title: "Contact",
-            //tabBarButton: HapticTab,
-            //tabBarIcon: ({ color }) => (
-              //<IconSymbol name="bubble.left.and.bubble.right.fill" size={26} color={color} />
-            //),
-          }}
-        />
-
-        {/* ABOUT */}
-        <Tabs.Screen
-          name="about"
-          options={{
-            title: "About",
-            tabBarButton: HapticTab,
-            tabBarIcon: ({ color }) => (
-              <IconSymbol name="person.crop.circle.fill" size={26} color={color} />
-            ),
-          }}
-        />
-
-        {/* SETTINGS */}
-        <Tabs.Screen
-          name="settings"
-          options={{
-            title: "Settings",
-            tabBarButton: HapticTab,
-            tabBarIcon: ({ color }) => (
-              <IconSymbol name="gearshape.fill" size={26} color={color} />
-            ),
-          }}
-        />
-
-        {/* TRACK - Hidden from tab bar */}
-        <Tabs.Screen
-          name="track"
-          options={{
-            href: null, // Hide from tab bar on all platforms
-          }}
-        />
-
-      </Tabs>
-    </SafeAreaView> 
+      {/* TRACK - Hidden */}
+      <NativeTabs.Trigger name="track" hidden />
+    </NativeTabs>
   );
 }

@@ -1,6 +1,8 @@
+import { Stack } from "expo-router";
 import { openBrowserAsync, WebBrowserPresentationStyle } from "expo-web-browser";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
 
@@ -31,11 +33,14 @@ export default function Services() {
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#02111E" }} edges={["top", "bottom"]}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
         <View style={styles.header}>
           <View style={styles.titleRow}>
             <View style={styles.iconContainer}>
@@ -287,8 +292,9 @@ export default function Services() {
             </View>
           )}
         </View>
-      </ScrollView>
-    </View>
+        </ScrollView>
+      </SafeAreaView>
+    </>
   );
 }
 
@@ -299,7 +305,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 30,
     paddingBottom: 40,
     gap: 20,
   },

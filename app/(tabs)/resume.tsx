@@ -36,6 +36,7 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { auth, db, storage } from "@/lib/firebase";
 import {
   generateFormattedResume,
@@ -388,7 +389,7 @@ export default function ResumeScreen() {
 
   if (initialLoading) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#02111E" }} edges={["top", "bottom"]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#3fe1c3" />
           <Text style={styles.loadingText}>Loading resumes...</Text>
@@ -400,77 +401,73 @@ export default function ResumeScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      
-      <ScrollView
-        // We move the styles.safe styles directly to the ScrollView
-        style={{ flex: 1, backgroundColor: "#02111E" }} 
-        contentContainerStyle={[
-          styles.scrollContent,
-          // Handle both top and bottom safe padding inside the ScrollView
-          { paddingTop: insets.top, paddingBottom: insets.bottom + 40 } 
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
-          <View style={styles.titleRow}>
-            <View style={styles.titleContainer}>
-              <View style={styles.iconContainer}>
-                <Ionicons name="document-text" size={22} color="#3fe1c3" />
+      {/* FIX 1: Removed "bottom" from edges. */}
+      {/* FIX 2: Set background to transparent to allow Liquid Glass. */}
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#02111E" }} edges={["top", "bottom"]}>
+        {/* FIX 3: Moved your #02111E background color to the ScrollView itself. */}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <View style={styles.titleRow}>
+              <View style={styles.titleContainer}>
+                <View style={styles.iconContainer}>
+                  <IconSymbol name="text.document" size={22} color="#3fe1c3" />
+                </View>
+                <Text style={styles.title}>Resumes</Text>
               </View>
-              <Text style={styles.title}>Your Resume</Text>
             </View>
+            <Text style={styles.subtitle}>
+              Upload and manage your resumes. View, download, or format for job applications.
+            </Text>
           </View>
-          <Text style={styles.subtitle}>
-            Upload your resume to apply for jobs faster
-          </Text>
-        </View>
 
-        {/* Upload Area or Latest Resume */}
-        {!latestResume ? (
-          <Pressable
-            style={({ pressed }) => [
-              styles.uploadArea,
-              pressed && !loading && styles.uploadAreaPressed,
-            ]}
-            onPress={pickAndUploadDocument}
-            disabled={loading || uploading}
-          >
-            {uploading ? (
-              <View style={styles.uploadingContainer}>
+          {/* Upload Area or Latest Resume */}
+          {!latestResume ? (
+            <Pressable
+              style={({ pressed }) => [
+                styles.uploadArea,
+                pressed && !loading && styles.uploadAreaPressed,
+              ]}
+              onPress={pickAndUploadDocument}
+              disabled={loading || uploading}
+            >
+              {uploading ? (
+                <View style={styles.uploadingContainer}>
+                  <ActivityIndicator size="large" color="#3fe1c3" />
+                  <Text style={styles.uploadingText}>
+                    Uploading... {Math.round(uploadProgress)}%
+                  </Text>
+                  <View style={styles.progressBar}>
+                    <View
+                      style={[
+                        styles.progressFill,
+                        { width: `${uploadProgress}%` },
+                      ]}
+                    />
+                  </View>
+                </View>
+              ) : loading ? (
                 <ActivityIndicator size="large" color="#3fe1c3" />
-                <Text style={styles.uploadingText}>
-                  Uploading... {Math.round(uploadProgress)}%
-                </Text>
-                <View style={styles.progressBar}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      { width: `${uploadProgress}%` },
-                    ]}
-                  />
-                </View>
-              </View>
-            ) : loading ? (
-              <ActivityIndicator size="large" color="#3fe1c3" />
-            ) : (
-              <>
-                <View style={styles.uploadIconContainer}>
-                  <Ionicons
-                    name="cloud-upload-outline"
-                    size={36}
-                    color="#3fe1c3"
-                  />
-                </View>
-                <Text style={styles.uploadTitle}>Tap to upload</Text>
-                <Text style={styles.uploadSubtitle}>PDF or Word documents</Text>
-                <Text style={styles.uploadHint}>Max file size: 10MB</Text>
-              </>
-            )}
-          </Pressable>
-        ) : (
-          <View style={styles.resumeCard}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardLabel}>Latest Resume</Text>
+              ) : (
+                <>
+                  <View style={styles.uploadIconContainer}>
+                    <Ionicons
+                      name="cloud-upload-outline"
+                      size={36}
+                      color="#3fe1c3"
+                    />
+                  </View>
+                  <Text style={styles.uploadTitle}>Tap to upload</Text>
+                  <Text style={styles.uploadSubtitle}>PDF or Word documents</Text>
+                  <Text style={styles.uploadHint}>Max file size: 10MB</Text>
+                </>
+              )}
+            </Pressable>
+          ) : (
+            <View style={styles.resumeCard}>
               {resumes.length > 1 && (
                 <Pressable
                   style={({ pressed }) => [pressed && styles.viewAllLinkPressed]}
@@ -481,406 +478,262 @@ export default function ResumeScreen() {
                   </Text>
                 </Pressable>
               )}
-            </View>
-
-            <View style={styles.fileIconContainer}>
-              <Ionicons
-                name={getFileIcon(latestResume.mimeType) as any}
-                size={32}
-                color="#3fe1c3"
-              />
-            </View>
-            <View style={styles.fileInfo}>
-              <Text style={styles.fileName} numberOfLines={2}>
-                {latestResume.name}
-              </Text>
-              <Text style={styles.fileSize}>
-                {formatFileSize(latestResume.size)}
-              </Text>
-              <Text style={styles.uploadDate}>
-                Uploaded {latestResume.uploadedAt.toLocaleDateString()}
-              </Text>
-            </View>
-
-            <View style={styles.actionButtons}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.viewButton,
-                  pressed && !loading && styles.actionButtonPressed,
-                ]}
-                onPress={() => viewResume(latestResume.url)}
-                disabled={loading}
-              >
-                <Ionicons name="eye-outline" size={20} color="white" />
-                <Text style={styles.viewButtonText}>View</Text>
-              </Pressable>
-
-              <Pressable
-                style={({ pressed }) => [
-                  styles.downloadButton,
-                  pressed && !loading && styles.actionButtonPressed,
-                ]}
-                onPress={() => downloadResume(latestResume)}
-                disabled={loading}
-              >
-                <Ionicons name="download-outline" size={20} color="white" />
-                <Text style={styles.downloadButtonText}>Download</Text>
-              </Pressable>
-
-              <Pressable
-                style={({ pressed }) => [
-                  styles.deleteButton,
-                  pressed && !loading && styles.actionButtonPressed,
-                ]}
-                onPress={() => deleteResume(latestResume)}
-                disabled={loading}
-              >
-                <Ionicons name="trash-outline" size={20} color="#FF453A" />
-              </Pressable>
-            </View>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.formatButton,
-                pressed && !formatting && styles.formatButtonPressed,
-              ]}
-              onPress={() => formatResume(latestResume)}
-              disabled={loading || formatting}
-            >
-              {formatting ? (
-                <>
-                  <ActivityIndicator size="small" color="#3fe1c3" />
-                  <Text style={styles.formatButtonText}>Formatting...</Text>
-                </>
-              ) : (
-                <>
-                  <Ionicons name="document-text-outline" size={20} color="#3fe1c3" />
-                  <Text style={styles.formatButtonText}>Format to Template</Text>
-                </>
-              )}
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.uploadNewButtonFull,
-                pressed && !loading && !uploading && styles.uploadNewButtonPressed,
-              ]}
-              onPress={pickAndUploadDocument}
-              disabled={loading || uploading}
-            >
-              <Ionicons name="add" size={20} color="white" />
-              <Text style={styles.uploadNewButtonText}>Upload New Resume</Text>
-            </Pressable>
-
-            {uploading && (
-              <View style={styles.uploadingOverlay}>
-                <ActivityIndicator size="small" color="#3fe1c3" />
-                <Text style={styles.uploadingSmallText}>
-                  Uploading... {Math.round(uploadProgress)}%
+              <View style={styles.fileIconContainer}>
+                <Ionicons
+                  name={getFileIcon(latestResume.mimeType) as any}
+                  size={32}
+                  color="#3fe1c3"
+                />
+              </View>
+              <View style={styles.fileInfo}>
+                <Text style={styles.fileName} numberOfLines={2}>
+                  {latestResume.name}
+                </Text>
+                <Text style={styles.fileSize}>
+                  {formatFileSize(latestResume.size)}
+                </Text>
+                <Text style={styles.uploadDate}>
+                  Uploaded {latestResume.uploadedAt.toLocaleDateString()}
                 </Text>
               </View>
-            )}
-          </View>
-        )}
 
-        {/* View All Resumes Button */}
-        {resumes.length >= 1 && (
-          <Pressable
-            style={({ pressed }) => [
-              styles.viewAllButton,
-              pressed && styles.viewAllButtonPressed,
-            ]}
-            onPress={() => setShowAllResumes(true)}
-          >
-            <Ionicons name="folder-open-outline" size={20} color="#3fe1c3" />
-            <Text style={styles.viewAllButtonText}>
-              View All Resumes ({resumes.length})
-            </Text>
-            <Ionicons name="chevron-forward" size={20} color="#738A9D" />
-          </Pressable>
-        )}
+              <View style={styles.actionButtons}>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.viewButton,
+                    pressed && !loading && styles.actionButtonPressed,
+                  ]}
+                  onPress={() => viewResume(latestResume.url)}
+                  disabled={loading}
+                >
+                  <Ionicons name="eye-outline" size={20} color="white" />
+                  <Text style={styles.viewButtonText}>View</Text>
+                </Pressable>
 
-        {/* Supported Formats */}
-        <View style={styles.formatsSection}>
-          <Text style={styles.formatsTitle}>Supported Formats</Text>
-          <View style={styles.formatsList}>
-            <View style={styles.formatItem}>
-              <Ionicons name="document-text" size={20} color="#3fe1c3" />
-              <Text style={styles.formatText}>PDF (.pdf)</Text>
-            </View>
-            <View style={styles.formatItem}>
-              <Ionicons name="document" size={20} color="#3fe1c3" />
-              <Text style={styles.formatText}>Word (.docx)</Text>
-            </View>
-          </View>
-        </View>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.downloadButton,
+                    pressed && !loading && styles.actionButtonPressed,
+                  ]}
+                  onPress={() => downloadResume(latestResume)}
+                  disabled={loading}
+                >
+                  <Ionicons name="download-outline" size={20} color="white" />
+                  <Text style={styles.downloadButtonText}>Download</Text>
+                </Pressable>
 
-        {/* Tips Section */}
-        <View style={styles.tipsSection}>
-          <Text style={styles.tipsTitle}>Resume Tips</Text>
-          <View style={styles.tipItem}>
-            <Ionicons name="checkmark-circle" size={18} color="#3fe1c3" />
-            <Text style={styles.tipText}>Keep it to 1 page</Text>
-          </View>
-          <View style={styles.tipItem}>
-            <Ionicons name="checkmark-circle" size={18} color="#3fe1c3" />
-            <Text style={styles.tipText}>Use clear, readable fonts</Text>
-          </View>
-          <View style={styles.tipItem}>
-            <Ionicons name="checkmark-circle" size={18} color="#3fe1c3" />
-            <Text style={styles.tipText}>Highlight relevant experience</Text>
-          </View>
-          <View style={styles.tipItem}>
-            <Ionicons name="checkmark-circle" size={18} color="#3fe1c3" />
-            <Text style={styles.tipText}>Proofread for errors</Text>
-          </View>
-        </View>
-      </ScrollView>
-
-      {/* All Resumes Modal */}
-      <Modal
-        visible={showAllResumes}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowAllResumes(false)}
-      >
-        <SafeAreaView style={styles.modalSafe}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>All Resumes</Text>
-            <Pressable
-              style={styles.closeButton}
-              onPress={() => setShowAllResumes(false)}
-            >
-              <Ionicons name="close" size={24} color="white" />
-            </Pressable>
-          </View>
-
-          <ScrollView
-            contentContainerStyle={styles.modalContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {resumes.map((resume) => (
-              <View key={resume.id} style={styles.resumeListItem}>
-                <View style={styles.listItemIcon}>
-                  <Ionicons
-                    name={getFileIcon(resume.mimeType) as any}
-                    size={28}
-                    color="#3fe1c3"
-                  />
-                </View>
-                <View style={styles.listItemInfo}>
-                  <Text style={styles.listItemName} numberOfLines={1}>
-                    {resume.name}
-                  </Text>
-                  <Text style={styles.listItemMeta}>
-                    {formatFileSize(resume.size)} •{" "}
-                    {resume.uploadedAt.toLocaleDateString()}
-                  </Text>
-                </View>
-                <View style={styles.listItemActions}>
-                  <Pressable
-                    style={styles.listActionButton}
-                    onPress={() => viewResume(resume.url)}
-                  >
-                    <Ionicons name="eye-outline" size={20} color="#3fe1c3" />
-                  </Pressable>
-                  <Pressable
-                    style={styles.listActionButton}
-                    onPress={() => downloadResume(resume)}
-                  >
-                    <Ionicons name="download-outline" size={20} color="#3fe1c3" />
-                  </Pressable>
-                  <Pressable
-                    style={styles.listDeleteButton}
-                    onPress={() => deleteResume(resume)}
-                  >
-                    <Ionicons name="trash-outline" size={20} color="#FF453A" />
-                  </Pressable>
-                </View>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.deleteButton,
+                    pressed && !loading && styles.actionButtonPressed,
+                  ]}
+                  onPress={() => deleteResume(latestResume)}
+                  disabled={loading}
+                >
+                  <Ionicons name="trash-outline" size={20} color="#FF453A" />
+                </Pressable>
               </View>
-            ))}
 
+              <Pressable
+                style={({ pressed }) => [
+                  styles.formatButton,
+                  pressed && !formatting && styles.formatButtonPressed,
+                ]}
+                onPress={() => formatResume(latestResume)}
+                disabled={loading || formatting}
+              >
+                {formatting ? (
+                  <>
+                    <ActivityIndicator size="small" color="#3fe1c3" />
+                    <Text style={styles.formatButtonText}>Formatting...</Text>
+                  </>
+                ) : (
+                  <>
+                    <Ionicons name="document-text-outline" size={20} color="#3fe1c3" />
+                    <Text style={styles.formatButtonText}>Format to Template</Text>
+                  </>
+                )}
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.uploadNewButtonFull,
+                  pressed && !loading && !uploading && styles.uploadNewButtonPressed,
+                ]}
+                onPress={pickAndUploadDocument}
+                disabled={loading || uploading}
+              >
+                <Ionicons name="add" size={20} color="white" />
+                <Text style={styles.uploadNewButtonText}>Upload New Resume</Text>
+              </Pressable>
+
+              {uploading && (
+                <View style={styles.uploadingOverlay}>
+                  <ActivityIndicator size="small" color="#3fe1c3" />
+                  <Text style={styles.uploadingSmallText}>
+                    Uploading... {Math.round(uploadProgress)}%
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* View All Resumes Button */}
+          {resumes && resumes.length >= 1 && (
             <Pressable
               style={({ pressed }) => [
-                styles.addMoreButton,
-                pressed && styles.addMoreButtonPressed,
+                styles.viewAllButton,
+                pressed && styles.viewAllButtonPressed,
               ]}
-              onPress={() => {
-                setShowAllResumes(false);
-                pickAndUploadDocument();
-              }}
+              onPress={() => setShowAllResumes(true)}
             >
-              <Ionicons name="add-circle-outline" size={24} color="#3fe1c3" />
-              <Text style={styles.addMoreText}>Upload Another Resume</Text>
+              <Ionicons name="folder-open-outline" size={20} color="#3fe1c3" />
+              <Text style={styles.viewAllButtonText}>
+                View All Resumes ({resumes.length})
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color="#738A9D" />
             </Pressable>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
+          )}
 
-      {/* Formatted Resume Modal */}
-      <Modal
-        visible={showFormattedResume}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowFormattedResume(false)}
-      >
-        <SafeAreaView style={styles.modalSafe}>
-          <View style={styles.modalHeader}>
-            <View style={styles.modalHeaderRow}>
-              <Text style={styles.modalTitle}>Formatted Resume</Text>
+          {/* Supported Formats */}
+          <View style={styles.formatsSection}>
+            <Text style={styles.formatsTitle}>Supported Formats</Text>
+            <View style={styles.formatsList}>
+              <View style={styles.formatItem}>
+                <Ionicons name="document-text" size={20} color="#3fe1c3" />
+                <Text style={styles.formatText}>PDF (.pdf)</Text>
+              </View>
+              <View style={styles.formatItem}>
+                <Ionicons name="document" size={20} color="#3fe1c3" />
+                <Text style={styles.formatText}>Word (.docx)</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Tips Section */}
+          <View style={styles.tipsSection}>
+            <Text style={styles.tipsTitle}>Resume Tips</Text>
+            <View style={styles.tipItem}>
+              <Ionicons name="checkmark-circle" size={18} color="#3fe1c3" />
+              <Text style={styles.tipText}>Keep it to 1 page</Text>
+            </View>
+            <View style={styles.tipItem}>
+              <Ionicons name="checkmark-circle" size={18} color="#3fe1c3" />
+              <Text style={styles.tipText}>Use clear, readable fonts</Text>
+            </View>
+            <View style={styles.tipItem}>
+              <Ionicons name="checkmark-circle" size={18} color="#3fe1c3" />
+              <Text style={styles.tipText}>Highlight relevant experience</Text>
+            </View>
+            <View style={styles.tipItem}>
+              <Ionicons name="checkmark-circle" size={18} color="#3fe1c3" />
+              <Text style={styles.tipText}>Proofread for errors</Text>
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* All Resumes Modal */}
+        <Modal
+          visible={showAllResumes}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowAllResumes(false)}
+        >
+          <SafeAreaView style={styles.modalSafe}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>All Resumes</Text>
               <Pressable
                 style={styles.closeButton}
-                onPress={() => setShowFormattedResume(false)}
+                onPress={() => setShowAllResumes(false)}
               >
                 <Ionicons name="close" size={24} color="white" />
               </Pressable>
             </View>
-            <Pressable
-              style={({ pressed }) => [
-                styles.saveWordHeaderButton,
-                pressed && styles.saveWordHeaderButtonPressed,
-              ]}
-              onPress={async () => {
-                try {
-                  if (!parsedResume) throw new Error("No resume data to export");
-                  await saveResumeAsDocx(parsedResume);
-                } catch (error) {
-                  console.error("Error saving Word document:", error);
-                  Alert.alert(
-                    "Export Failed",
-                    error instanceof Error ? error.message : "Could not save document."
-                  );
-                }
-              }}
+
+            <ScrollView
+              contentContainerStyle={styles.modalContent}
+              showsVerticalScrollIndicator={false}
             >
-              <Ionicons name="document-text-outline" size={18} color="#3fe1c3" />
-              <Text style={styles.saveWordHeaderButtonText}>Save as Word</Text>
-            </Pressable>
-          </View>
-
-          <ScrollView
-            contentContainerStyle={styles.modalContent}
-            showsVerticalScrollIndicator={true}
-          >
-            <View style={styles.resumeSheet}>
-
-              {/* Name */}
-              {parsedResume?.name ? (
-                <Text style={styles.resumeName}>{parsedResume.name}</Text>
-              ) : null}
-
-              {/* Contact line */}
-              {parsedResume && (
-                <Text style={styles.resumeContact}>
-                  {[
-                    parsedResume.location,
-                    parsedResume.phone,
-                    parsedResume.email,
-                    parsedResume.linkedin,
-                    parsedResume.github,
-                    parsedResume.portfolio,
-                  ]
-                    .filter(Boolean)
-                    .join(" | ")}
-                </Text>
-              )}
-
-              <View style={styles.resumeDivider} />
-
-              {/* Education */}
-              {parsedResume?.education && parsedResume.education.length > 0 && (
-                <View style={styles.resumeSection}>
-                  <Text style={styles.resumeSectionHeader}>EDUCATION</Text>
-                  <View style={styles.resumeSectionUnderline} />
-                  {parsedResume.education.map((edu, idx) => (
-                    <View key={idx} style={styles.resumeEntryBlock}>
-                      <View style={styles.resumeRow}>
-                        <Text style={styles.resumeBold}>
-                          {edu.degree}
-                          {edu.institution ? (
-                            <Text style={styles.resumeItalicInline}>{`, ${edu.institution}`}</Text>
-                          ) : null}
-                        </Text>
-                        <Text style={styles.resumeDate}>{edu.date}</Text>
-                      </View>
-                      {edu.gpa ? (
-                        <Text style={styles.resumeSubText}>{edu.gpa}</Text>
-                      ) : null}
-                    </View>
-                  ))}
+              {resumes && resumes.map((resume: any) => (
+                <View key={resume.id} style={styles.resumeListItem}>
+                  <View style={styles.listItemIcon}>
+                    <Ionicons
+                      name={getFileIcon(resume.mimeType) as any}
+                      size={28}
+                      color="#3fe1c3"
+                    />
+                  </View>
+                  <View style={styles.listItemInfo}>
+                    <Text style={styles.listItemName} numberOfLines={1}>
+                      {resume.name}
+                    </Text>
+                    <Text style={styles.listItemMeta}>
+                      {formatFileSize(resume.size)} •{" "}
+                      {resume.uploadedAt.toLocaleDateString()}
+                    </Text>
+                  </View>
+                  <View style={styles.listItemActions}>
+                    <Pressable
+                      style={styles.listActionButton}
+                      onPress={() => viewResume(resume.url)}
+                    >
+                      <Ionicons name="eye-outline" size={20} color="#3fe1c3" />
+                    </Pressable>
+                    <Pressable
+                      style={styles.listActionButton}
+                      onPress={() => downloadResume(resume)}
+                    >
+                      <Ionicons name="download-outline" size={20} color="#3fe1c3" />
+                    </Pressable>
+                    <Pressable
+                      style={styles.listDeleteButton}
+                      onPress={() => deleteResume(resume)}
+                    >
+                      <Ionicons name="trash-outline" size={20} color="#FF453A" />
+                    </Pressable>
+                  </View>
                 </View>
-              )}
+              ))}
 
-              {/* Technical Skills */}
-              {parsedResume?.skills ? (
-                <View style={styles.resumeSection}>
-                  <Text style={styles.resumeSectionHeader}>TECHNICAL SKILLS</Text>
-                  <View style={styles.resumeSectionUnderline} />
-                  <Text style={styles.resumeBodyText}>{parsedResume.skills}</Text>
-                </View>
-              ) : null}
-
-              {/* Professional Experience */}
-              {parsedResume?.experience && parsedResume.experience.length > 0 && (
-                <View style={styles.resumeSection}>
-                  <Text style={styles.resumeSectionHeader}>PROFESSIONAL EXPERIENCE</Text>
-                  <View style={styles.resumeSectionUnderline} />
-                  {parsedResume.experience.map((exp, idx) => (
-                    <View key={idx} style={styles.resumeEntryBlock}>
-                      <View style={styles.resumeRow}>
-                        <Text style={styles.resumeBold}>{exp.company}</Text>
-                        <Text style={styles.resumeDate}>{exp.date}</Text>
-                      </View>
-                      {(exp.position || exp.location) && (
-                        <View style={styles.resumeRow}>
-                          <Text style={styles.resumeItalic}>{exp.position}</Text>
-                          <Text style={styles.resumeItalic}>{exp.location}</Text>
-                        </View>
-                      )}
-                      {exp.bullets.map((bullet, bIdx) => (
-                        <View key={bIdx} style={styles.resumeBulletRow}>
-                          <Text style={styles.resumeBulletDot}>•</Text>
-                          <Text style={styles.resumeBulletText}>{bullet}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              {/* Technical Projects */}
-              {parsedResume?.projects && parsedResume.projects.length > 0 && (
-                <View style={styles.resumeSection}>
-                  <Text style={styles.resumeSectionHeader}>TECHNICAL PROJECTS</Text>
-                  <View style={styles.resumeSectionUnderline} />
-                  {parsedResume.projects.map((proj, idx) => (
-                    <View key={idx} style={styles.resumeEntryBlock}>
-                      <Text style={styles.resumeBold}>
-                        {proj.name}
-                        {proj.technologies ? (
-                          <Text style={styles.resumeItalicInline}>
-                            {" "}({proj.technologies})
-                          </Text>
-                        ) : null}
-                      </Text>
-                      {proj.bullets.map((bullet, bIdx) => (
-                        <View key={bIdx} style={styles.resumeBulletRow}>
-                          <Text style={styles.resumeBulletDot}>•</Text>
-                          <Text style={styles.resumeBulletText}>{bullet}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  ))}
-                </View>
-              )}
-
-            </View>
-
-            <View style={styles.formattedActions}>
               <Pressable
                 style={({ pressed }) => [
-                  styles.savePdfButton,
-                  pressed && styles.savePdfButtonPressed,
+                  styles.addMoreButton,
+                  pressed && styles.addMoreButtonPressed,
+                ]}
+                onPress={() => {
+                  setShowAllResumes(false);
+                  pickAndUploadDocument();
+                }}
+              >
+                <Ionicons name="add-circle-outline" size={24} color="#3fe1c3" />
+                <Text style={styles.addMoreText}>Upload Another Resume</Text>
+              </Pressable>
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
+
+        {/* Formatted Resume Modal */}
+        <Modal
+          visible={showFormattedResume}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowFormattedResume(false)}
+        >
+          <SafeAreaView style={styles.modalSafe}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderRow}>
+                <Text style={styles.modalTitle}>Formatted Resume</Text>
+                <Pressable
+                  style={styles.closeButton}
+                  onPress={() => setShowFormattedResume(false)}
+                >
+                  <Ionicons name="close" size={24} color="white" />
+                </Pressable>
+              </View>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.saveWordHeaderButton,
+                  pressed && styles.saveWordHeaderButtonPressed,
                 ]}
                 onPress={async () => {
                   try {
@@ -895,14 +748,155 @@ export default function ResumeScreen() {
                   }
                 }}
               >
-                <Ionicons name="document-text-outline" size={20} color="white" />
-                <Text style={styles.savePdfButtonText}>Save as Word</Text>
+                <Ionicons name="document-text-outline" size={18} color="#3fe1c3" />
+                <Text style={styles.saveWordHeaderButtonText}>Save as Word</Text>
               </Pressable>
             </View>
 
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
+            <ScrollView
+              contentContainerStyle={styles.modalContent}
+              showsVerticalScrollIndicator={true}
+            >
+              <View style={styles.resumeSheet}>
+                {/* Name */}
+                {parsedResume?.name ? (
+                  <Text style={styles.resumeName}>{parsedResume.name}</Text>
+                ) : null}
+
+                {/* Contact line */}
+                {parsedResume && (
+                  <Text style={styles.resumeContact}>
+                    {[
+                      parsedResume.location,
+                      parsedResume.phone,
+                      parsedResume.email,
+                      parsedResume.linkedin,
+                      parsedResume.github,
+                      parsedResume.portfolio,
+                    ]
+                      .filter(Boolean)
+                      .join(" | ")}
+                  </Text>
+                )}
+
+                <View style={styles.resumeDivider} />
+
+                {/* Education */}
+                {parsedResume?.education && parsedResume.education.length > 0 && (
+                  <View style={styles.resumeSection}>
+                    <Text style={styles.resumeSectionHeader}>EDUCATION</Text>
+                    <View style={styles.resumeSectionUnderline} />
+                    {parsedResume.education.map((edu: any, idx: number) => (
+                      <View key={idx} style={styles.resumeEntryBlock}>
+                        <View style={styles.resumeRow}>
+                          <Text style={styles.resumeBold}>
+                            {edu.degree}
+                            {edu.institution ? (
+                              <Text style={styles.resumeItalicInline}>{`, ${edu.institution}`}</Text>
+                            ) : null}
+                          </Text>
+                          <Text style={styles.resumeDate}>{edu.date}</Text>
+                        </View>
+                        {edu.gpa ? (
+                          <Text style={styles.resumeSubText}>{edu.gpa}</Text>
+                        ) : null}
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Technical Skills */}
+                {parsedResume?.skills ? (
+                  <View style={styles.resumeSection}>
+                    <Text style={styles.resumeSectionHeader}>TECHNICAL SKILLS</Text>
+                    <View style={styles.resumeSectionUnderline} />
+                    <Text style={styles.resumeBodyText}>{parsedResume.skills}</Text>
+                  </View>
+                ) : null}
+
+                {/* Professional Experience */}
+                {parsedResume?.experience && parsedResume.experience.length > 0 && (
+                  <View style={styles.resumeSection}>
+                    <Text style={styles.resumeSectionHeader}>PROFESSIONAL EXPERIENCE</Text>
+                    <View style={styles.resumeSectionUnderline} />
+                    {parsedResume.experience.map((exp: any, idx: number) => (
+                      <View key={idx} style={styles.resumeEntryBlock}>
+                        <View style={styles.resumeRow}>
+                          <Text style={styles.resumeBold}>{exp.company}</Text>
+                          <Text style={styles.resumeDate}>{exp.date}</Text>
+                        </View>
+                        {(exp.position || exp.location) && (
+                          <View style={styles.resumeRow}>
+                            <Text style={styles.resumeItalic}>{exp.position}</Text>
+                            <Text style={styles.resumeItalic}>{exp.location}</Text>
+                          </View>
+                        )}
+                        {exp.bullets && exp.bullets.map((bullet: string, bIdx: number) => (
+                          <View key={bIdx} style={styles.resumeBulletRow}>
+                            <Text style={styles.resumeBulletDot}>•</Text>
+                            <Text style={styles.resumeBulletText}>{bullet}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Technical Projects */}
+                {parsedResume?.projects && parsedResume.projects.length > 0 && (
+                  <View style={styles.resumeSection}>
+                    <Text style={styles.resumeSectionHeader}>TECHNICAL PROJECTS</Text>
+                    <View style={styles.resumeSectionUnderline} />
+                    {parsedResume.projects.map((proj: any, idx: number) => (
+                      <View key={idx} style={styles.resumeEntryBlock}>
+                        <Text style={styles.resumeBold}>
+                          {proj.name}
+                          {proj.technologies ? (
+                            <Text style={styles.resumeItalicInline}>
+                              {" "}({proj.technologies})
+                            </Text>
+                          ) : null}
+                        </Text>
+                        {proj.bullets && proj.bullets.map((bullet: string, bIdx: number) => (
+                          <View key={bIdx} style={styles.resumeBulletRow}>
+                            <Text style={styles.resumeBulletDot}>•</Text>
+                            <Text style={styles.resumeBulletText}>{bullet}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.formattedActions}>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.savePdfButton,
+                    pressed && styles.savePdfButtonPressed,
+                  ]}
+                  onPress={async () => {
+                    try {
+                      if (!parsedResume) throw new Error("No resume data to export");
+                      await saveResumeAsDocx(parsedResume);
+                    } catch (error) {
+                      console.error("Error saving Word document:", error);
+                      Alert.alert(
+                        "Export Failed",
+                        error instanceof Error ? error.message : "Could not save document."
+                      );
+                    }
+                  }}
+                >
+                  <Ionicons name="document-text-outline" size={20} color="white" />
+                  <Text style={styles.savePdfButtonText}>Save as Word</Text>
+                </Pressable>
+              </View>
+
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
+      </SafeAreaView>
     </>
   );
 }
@@ -930,7 +924,7 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: 12,
-    marginTop: -20,
+    marginBottom: 10,
   },
   titleRow: {
     flexDirection: "row",

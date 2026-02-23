@@ -160,7 +160,7 @@ export default function OnboardingScreen() {
       };
 
       await completeOnboarding(onboardingData);
-      router.replace("/services");
+      router.replace("/(tabs)/services");
     } catch (error) {
       console.error("Failed to complete onboarding", error);
       setIsSubmitting(false); 
